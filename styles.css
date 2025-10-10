@@ -48,6 +48,52 @@ button:focus {
     transform: scale(1.01);
 }
 
+/* Mejoras responsive para móvil */
+@media (max-width: 640px) {
+    /* Espaciado más compacto en móvil */
+    .space-y-4 > * + * {
+        margin-top: 0.75rem;
+    }
+    
+    /* Títulos más pequeños en móvil */
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    /* Botones más táctiles en móvil */
+    button {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+    
+    /* Filtros más compactos */
+    .filtro-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    /* Inputs más táctiles */
+    input, select {
+        min-height: 44px;
+        font-size: 16px; /* Previene zoom en iOS */
+    }
+}
+
+/* Punto de quiebre personalizado para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .xs\:hidden {
+        display: none !important;
+    }
+    
+    .xs\:inline {
+        display: inline !important;
+    }
+}
+
 /* Estilos para el sistema de usuarios */
 #modal-login {
     backdrop-filter: blur(4px);

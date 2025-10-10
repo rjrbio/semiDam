@@ -32,17 +32,34 @@ async function initializeFirebase() {
         // Verificar si Firebase está disponible
         if (typeof firebase === 'undefined') {
             console.warn('🔥 Firebase SDK no disponible, usando solo localStorage');
+            console.warn('🔗 Verifica que los scripts de Firebase estén cargando correctamente');
             return false;
         }
 
+        console.log('🔥 Iniciando conexión a Firebase...');
+        console.log('🌐 URL actual:', window.location.href);
+        console.log('📍 Dominio:', window.location.hostname);
+
         // Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
+        console.log('✅ Firebase app inicializada');
         
         // Inicializar Firestore
         db = firebase.firestore();
+        console.log('✅ Firestore inicializado');
+        
+        // Configurar persistencia offline
+        try {
+            await db.enablePersistence({ synchronizeTabs: true });
+            console.log('✅ Persistencia offline habilitada');
+        } catch (persistenceError) {
+            console.warn('⚠️ No se pudo habilitar persistencia offline:', persistenceError.message);
+        }
         
         // Verificar conexión con una operación simple
-        await db.collection('test').limit(1).get();
+        console.log('🔍 Verificando conexión a Firestore...');
+        const testSnapshot = await db.collection('test').limit(1).get();
+        console.log('✅ Test de conexión exitoso');
         
         isFirebaseConnected = true;
         console.log('🔥 Firebase conectado exitosamente');
@@ -53,8 +70,28 @@ async function initializeFirebase() {
         return true;
         
     } catch (error) {
-        console.warn('🔥 Error conectando Firebase:', error.message);
-        console.warn('📱 Usando modo offline con localStorage');
+        console.error('❌ Error detallado conectando Firebase:');
+        console.error('📝 Mensaje:', error.message);
+        console.error('🔢 Código:', error.code);
+        console.error('📊 Stack:', error.stack);
+        
+        // Diagnóstico específico por tipo de error
+        if (error.code === 'permission-denied') {
+            console.error('� Permisos denegados. Posibles causas:');
+            console.error('   - El dominio no está autorizado en Firebase Console');
+            console.error('   - Las reglas de Firestore no permiten acceso');
+            console.error('   - Problemas de autenticación');
+        } else if (error.code === 'unavailable') {
+            console.error('🔌 Firebase no disponible. Posibles causas:');
+            console.error('   - Problemas de red');
+            console.error('   - Servidor Firebase temporalmente inaccesible');
+        } else if (error.message.includes('CORS')) {
+            console.error('🌐 Error de CORS. Posibles causas:');
+            console.error('   - Dominio no autorizado en Firebase Console');
+            console.error('   - Configuración incorrecta de dominios autorizados');
+        }
+        
+        console.warn('📱 Activando modo offline con localStorage');
         
         isFirebaseConnected = false;
         mostrarEstadoConexion('offline');
@@ -74,21 +111,22 @@ function mostrarEstadoConexion(estado) {
     if (!indicador) {
         indicador = document.createElement('div');
         indicador.id = 'estado-conexion';
-        indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all';
+        indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all cursor-pointer';
+        indicador.onclick = mostrarDiagnosticoConexion;
         document.body.appendChild(indicador);
     }
     
     switch (estado) {
         case 'online':
-            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all bg-green-500 text-white';
+            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all cursor-pointer bg-green-500 text-white';
             indicador.innerHTML = '🔥 Online';
             break;
         case 'offline':
-            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all bg-gray-500 text-white';
+            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all cursor-pointer bg-gray-500 text-white';
             indicador.innerHTML = '📱 Offline';
             break;
         case 'syncing':
-            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all bg-blue-500 text-white';
+            indicador.className = 'fixed top-4 left-4 px-3 py-1 rounded-full text-sm font-medium z-50 transition-all cursor-pointer bg-blue-500 text-white';
             indicador.innerHTML = '🔄 Sincronizando...';
             break;
     }
@@ -97,15 +135,40 @@ function mostrarEstadoConexion(estado) {
     if (estado === 'online') {
         setTimeout(() => {
             if (indicador && indicador.innerHTML === '🔥 Online') {
-                indicador.style.opacity = '0';
-                setTimeout(() => {
-                    if (indicador && indicador.parentNode) {
-                        indicador.parentNode.removeChild(indicador);
-                    }
-                }, 300);
+                indicador.style.opacity = '0.7';
             }
         }, 3000);
     }
+}
+
+/**
+ * Muestra información de diagnóstico al hacer clic en el indicador
+ */
+function mostrarDiagnosticoConexion() {
+    const info = `
+🔧 DIAGNÓSTICO DE CONEXIÓN
+
+📍 URL actual: ${window.location.href}
+🌐 Dominio: ${window.location.hostname}
+🔥 Firebase conectado: ${isFirebaseConnected ? '✅ Sí' : '❌ No'}
+📦 Firebase SDK disponible: ${typeof firebase !== 'undefined' ? '✅ Sí' : '❌ No'}
+📊 Número de tareas: ${typeof tareas !== 'undefined' ? tareas.length : 'No disponible'}
+
+${!isFirebaseConnected ? `
+🚨 PROBLEMAS DETECTADOS:
+• Firebase no está conectado
+• Revisa la consola del navegador para más detalles
+• Verifica que el dominio esté autorizado en Firebase Console
+
+🔧 SOLUCIONES:
+1. Abre Firebase Console → Authentication → Settings → Authorized domains
+2. Añade: ${window.location.hostname}
+3. Si usas GitHub Pages, añade también: tu-usuario.github.io
+4. Verifica las reglas de Firestore Database
+` : '✅ Todo funciona correctamente'}
+    `;
+    
+    alert(info);
 }
 
 // ========================================

@@ -7,6 +7,17 @@
     <link rel="stylesheet" href="styles.css">
     <!-- CDN de Tailwind CSS para estilos rápidos -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    screens: {
+                        'xs': '480px',
+                    }
+                }
+            }
+        }
+    </script>
     <!-- CDN de iconos (Lucide) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
@@ -15,45 +26,47 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 <body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <div class="max-w-6xl mx-auto p-4">
+    <div class="max-w-6xl mx-auto p-2 sm:p-4">
         <!-- Header -->
-        <header class="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+        <header class="bg-white rounded-xl shadow-lg p-3 sm:p-6 mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="text-center sm:text-left">
+                    <h1 class="text-xl sm:text-3xl font-bold text-gray-800 flex items-center justify-center sm:justify-start gap-2">
                         <i data-lucide="book-open" class="text-indigo-600"></i>
-                        Gestor de Tareas DAM
+                        <span class="hidden xs:inline">Gestor de Tareas DAM</span>
+                        <span class="xs:hidden">Tareas DAM</span>
                     </h1>
-                    <p class="text-gray-600 mt-1">Organiza tus tareas y exámenes</p>
+                    <p class="text-gray-600 mt-1 text-sm sm:text-base">Organiza tus tareas y exámenes</p>
                 </div>
-                <div class="flex gap-3">
-                    <button id="btn-sincronizar" class="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg flex items-center gap-2 transition-colors" title="Sincronizar con la nube">
-                        <i data-lucide="refresh-cw" size="20"></i>
-                        Sync
+                <div class="flex gap-2 sm:gap-3 justify-center sm:justify-end">
+                    <button id="btn-sincronizar" class="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-sm sm:text-base" title="Sincronizar con la nube">
+                        <i data-lucide="refresh-cw" size="18"></i>
+                        <span class="hidden sm:inline">Sync</span>
                     </button>
-                    <button id="btn-nueva-tarea" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
-                        <i data-lucide="plus" size="20"></i>
-                        Nueva Tarea
+                    <button id="btn-nueva-tarea" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-sm sm:text-base">
+                        <i data-lucide="plus" size="18"></i>
+                        <span class="hidden xs:inline">Nueva Tarea</span>
+                        <span class="xs:hidden">Nueva</span>
                     </button>
                 </div>
             </div>
         </header>
 
         <!-- Formulario (inicialmente oculto) -->
-        <div id="formulario-tarea" class="bg-white rounded-xl shadow-lg p-6 mb-6 hidden">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Añadir Tarea o Examen</h2>
-            <form id="form-tarea" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+        <div id="formulario-tarea" class="bg-white rounded-xl shadow-lg p-3 sm:p-6 mb-4 sm:mb-6 hidden">
+            <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Añadir Tarea o Examen</h2>
+            <form id="form-tarea" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div class="sm:col-span-2 md:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
                     <input type="text" id="titulo" name="titulo" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base"
                            placeholder="Ej: Práctica SQL">
                 </div>
 
-                <div>
+                <div class="sm:col-span-2 md:col-span-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Asignatura</label>
                     <select id="asignatura" name="asignatura" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
                         <option value="Bases de datos">Bases de datos</option>
                         <option value="Digitalización">Digitalización</option>
                         <option value="Entornos de desarrollo">Entornos de desarrollo</option>
@@ -68,7 +81,7 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
                     <select id="tipo" name="tipo" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
                         <option value="tarea">Tarea</option>
                         <option value="examen">Examen</option>
                     </select>
@@ -77,13 +90,13 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
                     <input type="date" id="fecha" name="fecha" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
                     <select id="plataforma" name="plataforma" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
                         <option value="Junta de Andalucía">Junta de Andalucía</option>
                         <option value="Portada">Portada</option>
                     </select>
@@ -92,14 +105,16 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
                     <input type="text" id="descripcion" name="descripcion"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Detalles adicionales">
+                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base" placeholder="Detalles adicionales">
                 </div>
 
-                <div class="md:col-span-2 flex gap-3">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg transition-colors">
+                <div class="sm:col-span-2 flex flex-col sm:flex-row gap-2 sm:gap-3">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-none">
+                        Agregar
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-none">
                         Agregar
                     </button>
-                    <button type="button" id="btn-cancelar" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-2 rounded-lg transition-colors">
+                    <button type="button" id="btn-cancelar" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-none">
                         Cancelar
                     </button>
                 </div>
@@ -107,34 +122,41 @@
         </div>
 
         <!-- Filtros -->
-        <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
-            <div id="filtros" class="flex flex-wrap gap-2">
-                <button data-filtro="Todas" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-indigo-600 text-white">
+        <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-6">
+            <div id="filtros" class="flex flex-wrap gap-1 sm:gap-2">
+                <button data-filtro="Todas" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm">
                     Todas
                 </button>
-                <button data-filtro="Bases de datos" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Bases de datos
+                <button data-filtro="Bases de datos" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Bases de datos</span>
+                    <span class="sm:hidden">BBDD</span>
                 </button>
-                <button data-filtro="Digitalización" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Digitalización
+                <button data-filtro="Digitalización" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Digitalización</span>
+                    <span class="sm:hidden">Digital</span>
                 </button>
-                <button data-filtro="Entornos de desarrollo" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Entornos de desarrollo
+                <button data-filtro="Entornos de desarrollo" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Entornos de desarrollo</span>
+                    <span class="sm:hidden">ED</span>
                 </button>
-                <button data-filtro="IP1" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
+                <button data-filtro="IP1" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
                     IP1
                 </button>
-                <button data-filtro="Lenguajes de marca" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Lenguajes de marca
+                <button data-filtro="Lenguajes de marca" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Lenguajes de marca</span>
+                    <span class="sm:hidden">LM</span>
                 </button>
-                <button data-filtro="Programación" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Programación
+                <button data-filtro="Programación" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Programación</span>
+                    <span class="sm:hidden">Prog</span>
                 </button>
-                <button data-filtro="Sistemas informáticos" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Sistemas informáticos
+                <button data-filtro="Sistemas informáticos" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Sistemas informáticos</span>
+                    <span class="sm:hidden">SI</span>
                 </button>
-                <button data-filtro="Sostenibilidad" class="filtro-btn px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200">
-                    Sostenibilidad
+                <button data-filtro="Sostenibilidad" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
+                    <span class="hidden sm:inline">Sostenibilidad</span>
+                    <span class="sm:hidden">Sost</span>
                 </button>
             </div>
         </div>
