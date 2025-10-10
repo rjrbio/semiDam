@@ -48,6 +48,95 @@ button:focus {
     transform: scale(1.01);
 }
 
+/* Estilos para el sistema de usuarios */
+#modal-login {
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+#modal-login .bg-white {
+    animation: scaleIn 0.3s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Indicadores de progreso colaborativo */
+.progreso-colaborativo {
+    transition: all 0.3s ease;
+}
+
+.progreso-colaborativo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Barra de progreso animada */
+.bg-indigo-600 {
+    transition: width 0.5s ease-in-out;
+}
+
+/* Badges de usuarios */
+.text-xs.px-2.py-1.rounded-full {
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.text-xs.px-2.py-1.rounded-full:hover {
+    transform: scale(1.05);
+}
+
+/* Indicador de usuario actual con ring */
+.ring-2.ring-indigo-400 {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Estilos para tareas completadas por el usuario */
+.bg-green-50.border-l-4.border-green-400 {
+    animation: completedGlow 0.5s ease-out;
+}
+
+@keyframes completedGlow {
+    0% {
+        background-color: #f0fdf4;
+        border-left-color: #22c55e;
+    }
+    50% {
+        background-color: #dcfce7;
+        border-left-color: #16a34a;
+    }
+    100% {
+        background-color: #f0fdf4;
+        border-left-color: #22c55e;
+    }
+}
+
 /* Responsive mejorado */
 @media (max-width: 768px) {
     .max-w-6xl {
@@ -70,6 +159,16 @@ button:focus {
     
     .filtro-btn {
         text-align: center;
+    }
+    
+    /* Ajustes para el modal en móvil */
+    #modal-login .max-w-md {
+        max-width: 90vw;
+    }
+    
+    /* Ocultar algunos elementos en móvil para mejor UX */
+    #usuario-info .text-xs {
+        display: none;
     }
 }
 
@@ -100,6 +199,10 @@ button:focus {
     .shadow-lg {
         box-shadow: none !important;
         border: 1px solid #e5e7eb !important;
+    }
+    
+    #modal-login {
+        display: none !important;
     }
 }
 
@@ -132,4 +235,9 @@ button:focus {
 @keyframes spin {
     0% { transform: translate(-50%, -50%) rotate(0deg); }
     100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Animación para el botón de sincronización */
+.animate-spin {
+    animation: spin 1s linear infinite;
 }

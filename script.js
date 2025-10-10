@@ -1,5 +1,5 @@
-// Gestor de Tareas DAM - JavaScript Vanilla
-// Autor: Refactorización de React a JS Vanilla
+// Gestor de Tareas DAM - JavaScript Vanilla con Firebase
+// Autor: Refactorización de React a JS Vanilla + Firebase Integration
 
 // ========================================
 // 1. VARIABLES GLOBALES Y ESTADO
@@ -11,8 +11,8 @@ let tareas = [];
 // Filtro actual activo
 let filtroActual = 'Todas';
 
-// ID único para cada tarea
-let contadorId = 1;
+// Estado de inicialización
+let appInicializada = false;
 
 // ========================================
 // 2. FUNCIONES DE UTILIDAD
@@ -34,89 +34,237 @@ function formatearFecha(fecha) {
 }
 
 /**
- * Genera un ID único para cada tarea
- * @returns {number} - ID único
+ * Genera un ID único para cada tarea (solo para modo offline)
+ * @returns {string} - ID único
  */
-function generarId() {
-    return contadorId++;
+function generarIdTemporal() {
+    return 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+}
+
+// ========================================
+// 3. FUNCIONES DE PERSISTENCIA HÍBRIDA
+// ========================================
+
+/**
+ * Carga las tareas al inicializar la aplicación
+ * Intenta Firebase primero, localStorage como respaldo
+ */
+async function cargarTareasIniciales() {
+    try {
+        if (isFirebaseConnected) {
+            // Intentar cargar desde Firebase
+            tareas = await cargarTareasFirebase();
+            guardarTareasLocal(); // Crear respaldo local
+        } else {
+            // Cargar desde localStorage
+            tareas = cargarTareasLocal();
+        }
+        
+        console.log(`📥 ${tareas.length} tareas cargadas`);
+        
+    } catch (error) {
+        console.error('❌ Error cargando tareas:', error);
+        // Fallback a localStorage
+        tareas = cargarTareasLocal();
+        mostrarMensaje('⚠️ Cargando datos desde respaldo local', 'info');
+    }
 }
 
 /**
- * Guarda las tareas en localStorage
+ * Guarda una tarea (Firebase + localStorage)
+ * @param {Object} tarea - Objeto tarea
+ * @returns {Promise<string>} - ID de la tarea
  */
-function guardarTareas() {
-    localStorage.setItem('tareas-dam', JSON.stringify(tareas));
+async function guardarTarea(tarea) {
+    try {
+        if (isFirebaseConnected) {
+            // Guardar en Firebase
+            const firebaseId = await guardarTareaFirebase(tarea);
+            tarea.id = firebaseId;
+        } else {
+            // Usar ID temporal para modo offline
+            tarea.id = generarIdTemporal();
+        }
+        
+        // Añadir al array local
+        tareas.push(tarea);
+        
+        // Guardar respaldo local
+        guardarTareasLocal();
+        
+        return tarea.id;
+        
+    } catch (error) {
+        console.error('❌ Error guardando tarea:', error);
+        
+        // Fallback: guardar solo localmente
+        tarea.id = generarIdTemporal();
+        tareas.push(tarea);
+        guardarTareasLocal();
+        
+        mostrarMensaje('⚠️ Tarea guardada solo localmente', 'info');
+        return tarea.id;
+    }
 }
 
 /**
- * Carga las tareas desde localStorage
+ * Actualiza una tarea existente
+ * @param {string} id - ID de la tarea
+ * @param {Object} datosActualizados - Datos a actualizar
  */
-function cargarTareas() {
-    const tareasGuardadas = localStorage.getItem('tareas-dam');
-    if (tareasGuardadas) {
-        tareas = JSON.parse(tareasGuardadas);
-        // Actualizar el contador para que los nuevos IDs no se repitan
-        if (tareas.length > 0) {
-            contadorId = Math.max(...tareas.map(t => t.id)) + 1;
+async function actualizarTarea(id, datosActualizados) {
+    try {
+        // Buscar la tarea en el array local
+        const indice = tareas.findIndex(t => t.id === id);
+        if (indice === -1) {
+            throw new Error('Tarea no encontrada');
+        }
+        
+        // Actualizar en Firebase si está conectado
+        if (isFirebaseConnected && !id.startsWith('temp_')) {
+            await actualizarTareaFirebase(id, datosActualizados);
+        }
+        
+        // Actualizar en el array local
+        tareas[indice] = { ...tareas[indice], ...datosActualizados };
+        
+        // Guardar respaldo local
+        guardarTareasLocal();
+        
+    } catch (error) {
+        console.error('❌ Error actualizando tarea:', error);
+        
+        // Fallback: actualizar solo localmente
+        const indice = tareas.findIndex(t => t.id === id);
+        if (indice !== -1) {
+            tareas[indice] = { ...tareas[indice], ...datosActualizados };
+            guardarTareasLocal();
+            mostrarMensaje('⚠️ Cambios guardados solo localmente', 'info');
         }
     }
 }
 
+/**
+ * Elimina una tarea
+ * @param {string} id - ID de la tarea
+ */
+async function eliminarTareaCompleta(id) {
+    try {
+        // Eliminar de Firebase si está conectado
+        if (isFirebaseConnected && !id.startsWith('temp_')) {
+            await eliminarTareaFirebase(id);
+        }
+        
+        // Eliminar del array local
+        tareas = tareas.filter(t => t.id !== id);
+        
+        // Guardar respaldo local
+        guardarTareasLocal();
+        
+    } catch (error) {
+        console.error('❌ Error eliminando tarea:', error);
+        
+        // Fallback: eliminar solo localmente
+        tareas = tareas.filter(t => t.id !== id);
+        guardarTareasLocal();
+        mostrarMensaje('⚠️ Tarea eliminada solo localmente', 'info');
+    }
+}
+
 // ========================================
-// 3. FUNCIONES DE GESTIÓN DE TAREAS
+// 4. FUNCIONES DE GESTIÓN DE TAREAS
 // ========================================
 
 /**
- * Añade una nueva tarea al array
+ * Añade una nueva tarea
  * @param {Object} datosFormulario - Datos del formulario
  */
-function agregarTarea(datosFormulario) {
-    const nuevaTarea = {
-        id: generarId(),
-        titulo: datosFormulario.titulo,
-        asignatura: datosFormulario.asignatura,
-        tipo: datosFormulario.tipo,
-        fecha: datosFormulario.fecha,
-        plataforma: datosFormulario.plataforma,
-        descripcion: datosFormulario.descripcion || '',
-        completada: false,
-        fechaCreacion: new Date().toISOString()
-    };
-    
-    tareas.push(nuevaTarea);
-    guardarTareas();
-    renderizarTareas();
-    
-    // Mostrar mensaje de éxito
-    mostrarMensaje('Tarea añadida correctamente', 'exito');
+async function agregarTarea(datosFormulario) {
+    try {
+        const nuevaTarea = {
+            titulo: datosFormulario.titulo,
+            asignatura: datosFormulario.asignatura,
+            tipo: datosFormulario.tipo,
+            fecha: datosFormulario.fecha,
+            plataforma: datosFormulario.plataforma,
+            descripcion: datosFormulario.descripcion || '',
+            completada: false,
+            fechaCreacion: new Date().toISOString()
+        };
+        
+        // Guardar la tarea (Firebase + localStorage)
+        await guardarTarea(nuevaTarea);
+        
+        // Renderizar tareas actualizadas
+        renderizarTareas();
+        
+        // Mostrar mensaje de éxito
+        mostrarMensaje('✅ Tarea añadida correctamente', 'exito');
+        
+    } catch (error) {
+        console.error('❌ Error añadiendo tarea:', error);
+        mostrarMensaje('❌ Error añadiendo tarea', 'error');
+    }
 }
 
 /**
- * Elimina una tarea por su ID
- * @param {number} id - ID de la tarea a eliminar
+ * Elimina una tarea por su ID (solo administradores)
+ * @param {string} id - ID de la tarea a eliminar
  */
-function eliminarTarea(id) {
-    if (confirm('¿Estás seguro de que quieres eliminar esta tarea?')) {
-        tareas = tareas.filter(tarea => tarea.id !== id);
-        guardarTareas();
-        renderizarTareas();
-        mostrarMensaje('Tarea eliminada', 'info');
+async function eliminarTarea(id) {
+    // Verificar permisos de administrador
+    if (!esAdministrador) {
+        mostrarMensaje('❌ Solo los administradores pueden eliminar tareas', 'error');
+        return;
+    }
+    
+    if (confirm('¿Estás seguro de que quieres eliminar esta tarea? Esta acción afectará a todos los usuarios.')) {
+        try {
+            await eliminarTareaCompleta(id);
+            renderizarTareas();
+            mostrarMensaje('🗑️ Tarea eliminada correctamente', 'info');
+            
+        } catch (error) {
+            console.error('❌ Error eliminando tarea:', error);
+            mostrarMensaje('❌ Error eliminando tarea', 'error');
+        }
     }
 }
 
 /**
  * Cambia el estado de completada de una tarea
- * @param {number} id - ID de la tarea
+ * @param {string} id - ID de la tarea
  */
-function toggleCompletada(id) {
-    const tarea = tareas.find(t => t.id === id);
-    if (tarea) {
-        tarea.completada = !tarea.completada;
-        guardarTareas();
+async function toggleCompletada(id) {
+    try {
+        if (!usuarioActual) {
+            mostrarMensaje('❌ Debes iniciar sesión para marcar tareas', 'error');
+            return;
+        }
+        
+        const tarea = tareas.find(t => t.id === id);
+        if (!tarea) {
+            throw new Error('Tarea no encontrada');
+        }
+        
+        // Obtener estado actual del usuario
+        const estadoActual = obtenerProgresoUsuario(tarea, usuarioActual);
+        const nuevoEstado = !estadoActual;
+        
+        // Actualizar progreso del usuario
+        await actualizarProgresoUsuario(id, usuarioActual, nuevoEstado);
+        
+        // Renderizar tareas actualizadas
         renderizarTareas();
         
-        const mensaje = tarea.completada ? 'Tarea marcada como completada' : 'Tarea marcada como pendiente';
+        const mensaje = nuevoEstado ? 
+            '✅ Marcaste la tarea como completada' : 
+            '📝 Marcaste la tarea como pendiente';
         mostrarMensaje(mensaje, 'info');
+        
+    } catch (error) {
+        console.error('❌ Error actualizando progreso:', error);
+        mostrarMensaje('❌ Error actualizando progreso', 'error');
     }
 }
 
@@ -206,19 +354,63 @@ function mostrarMensaje(texto, tipo = 'info') {
  * @returns {string} - HTML de la tarea
  */
 function crearHTMLTarea(tarea) {
+    if (!usuarioActual) return '';
+    
     const fechaFormateada = formatearFecha(tarea.fecha);
     const tipoClase = tarea.tipo === 'examen' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
     const tipoTexto = tarea.tipo === 'examen' ? '📝 Examen' : '📚 Tarea';
-    const completadaClase = tarea.completada ? 'opacity-60' : '';
-    const tituloClase = tarea.completada ? 'line-through text-gray-500' : 'text-gray-800';
+    
+    // Obtener progreso del usuario actual
+    const miProgreso = obtenerProgresoUsuario(tarea, usuarioActual);
+    const completadaClase = miProgreso ? 'bg-green-50 border-l-4 border-green-400' : '';
+    const tituloClase = miProgreso ? 'text-green-800' : 'text-gray-800';
+    
+    // Obtener estadísticas de progreso general
+    const stats = obtenerEstadisticasTarea(tarea);
+    
+    // Generar HTML de estadísticas colaborativas
+    const htmlEstadisticas = stats.total > 0 ? `
+        <div class="mt-3 p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Progreso de la clase</span>
+                <span class="text-sm text-gray-600">${stats.completadas}/${stats.total} completadas</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                <div class="bg-indigo-600 h-2 rounded-full transition-all" style="width: ${stats.porcentaje}%"></div>
+            </div>
+            <div class="flex flex-wrap gap-1">
+                ${stats.usuarios.map(usuario => {
+                    const completado = obtenerProgresoUsuario(tarea, usuario);
+                    const esYo = usuario === usuarioActual;
+                    return `
+                        <span class="text-xs px-2 py-1 rounded-full ${
+                            completado ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        } ${esYo ? 'ring-2 ring-indigo-400 font-medium' : ''}">
+                            ${esYo ? '👤 ' : ''}${usuario}${completado ? ' ✓' : ''}
+                        </span>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    ` : '';
+    
+    // Mostrar botón de eliminar solo para administradores
+    const botonEliminar = esAdministrador ? `
+        <button onclick="eliminarTarea('${tarea.id}')" 
+                class="text-red-500 hover:text-red-700 transition-colors ml-4"
+                title="Eliminar tarea (solo administradores)">
+            <i data-lucide="trash-2" size="20"></i>
+        </button>
+    ` : '';
     
     return `
         <div class="bg-white rounded-xl shadow-lg p-6 transition-all hover:shadow-xl ${completadaClase}">
             <div class="flex items-start justify-between">
                 <div class="flex items-start gap-4 flex-1">
-                    <button onclick="toggleCompletada(${tarea.id})" 
-                            class="mt-1 text-gray-400 hover:text-indigo-600 transition-colors">
-                        ${tarea.completada ? 
+                    <button onclick="toggleCompletada('${tarea.id}')" 
+                            class="mt-1 text-gray-400 hover:text-indigo-600 transition-colors"
+                            title="Marcar tu progreso personal">
+                        ${miProgreso ? 
                             '<i data-lucide="check-circle" class="text-green-600" size="24"></i>' : 
                             '<i data-lucide="circle" size="24"></i>'
                         }
@@ -232,6 +424,7 @@ function crearHTMLTarea(tarea) {
                             <span class="px-3 py-1 rounded-full text-sm font-medium ${tipoClase}">
                                 ${tipoTexto}
                             </span>
+                            ${miProgreso ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">Tu progreso: ✓</span>' : ''}
                         </div>
                         
                         <div class="space-y-1 text-sm text-gray-600">
@@ -243,13 +436,12 @@ function crearHTMLTarea(tarea) {
                             <p><strong>Plataforma:</strong> ${tarea.plataforma}</p>
                             ${tarea.descripcion ? `<p class="mt-2 text-gray-700">${tarea.descripcion}</p>` : ''}
                         </div>
+                        
+                        ${htmlEstadisticas}
                     </div>
                 </div>
                 
-                <button onclick="eliminarTarea(${tarea.id})" 
-                        class="text-red-500 hover:text-red-700 transition-colors ml-4">
-                    <i data-lucide="trash-2" size="20"></i>
-                </button>
+                ${botonEliminar}
             </div>
         </div>
     `;
@@ -286,21 +478,68 @@ function renderizarTareas() {
 /**
  * Inicializa la aplicación cuando se carga la página
  */
-function inicializarApp() {
-    // Cargar tareas guardadas
-    cargarTareas();
+async function inicializarApp() {
+    if (appInicializada) return;
     
-    // Renderizar tareas iniciales
-    renderizarTareas();
-    
+    try {
+        // Mostrar indicador de carga
+        mostrarEstadoConexion('syncing');
+        
+        // Inicializar Firebase
+        await initializeFirebase();
+        
+        // Inicializar sistema de usuarios
+        await inicializarSistemaUsuarios();
+        
+        // Cargar tareas
+        await cargarTareasIniciales();
+        
+        // Renderizar tareas iniciales
+        renderizarTareas();
+        
+        // Configurar event listeners
+        configurarEventListeners();
+        
+        appInicializada = true;
+        console.log('✅ Aplicación inicializada correctamente');
+        
+    } catch (error) {
+        console.error('❌ Error inicializando aplicación:', error);
+        mostrarMensaje('⚠️ Error de inicialización, usando modo offline', 'info');
+        
+        // Fallback: cargar datos locales
+        tareas = cargarTareasLocal();
+        
+        // Inicializar sistema de usuarios aunque falle Firebase
+        await inicializarSistemaUsuarios();
+        
+        renderizarTareas();
+        configurarEventListeners();
+        
+        appInicializada = true;
+    }
+}
+
+/**
+ * Configura todos los event listeners
+ */
+function configurarEventListeners() {
     // Event listener para el botón de nueva tarea
     document.getElementById('btn-nueva-tarea').addEventListener('click', toggleFormulario);
+    
+    // Event listener para el botón de sincronización
+    document.getElementById('btn-sincronizar').addEventListener('click', async function() {
+        this.innerHTML = '<i data-lucide="loader-2" size="20" class="animate-spin"></i> Sync';
+        await sincronizarConFirebase();
+        this.innerHTML = '<i data-lucide="refresh-cw" size="20"></i> Sync';
+        lucide.createIcons();
+    });
     
     // Event listener para el botón de cancelar
     document.getElementById('btn-cancelar').addEventListener('click', toggleFormulario);
     
     // Event listener para el formulario
-    document.getElementById('form-tarea').addEventListener('submit', function(e) {
+    document.getElementById('form-tarea').addEventListener('submit', async function(e) {
         e.preventDefault();
         
         // Obtener datos del formulario
@@ -316,12 +555,12 @@ function inicializarApp() {
         
         // Validar datos
         if (!datosFormulario.titulo || !datosFormulario.fecha) {
-            mostrarMensaje('Por favor, completa todos los campos obligatorios', 'error');
+            mostrarMensaje('❌ Por favor, completa todos los campos obligatorios', 'error');
             return;
         }
         
         // Añadir tarea
-        agregarTarea(datosFormulario);
+        await agregarTarea(datosFormulario);
         
         // Ocultar formulario
         toggleFormulario();
@@ -334,8 +573,31 @@ function inicializarApp() {
         });
     });
     
-    console.log('✅ Gestor de Tareas DAM inicializado correctamente');
+    // Event listener para sincronización manual (Ctrl+R o F5)
+    document.addEventListener('keydown', async function(e) {
+        if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
+            e.preventDefault();
+            await sincronizarConFirebase();
+        }
+    });
+    
+    // Event listener para detectar cuando se vuelve online
+    window.addEventListener('online', async function() {
+        console.log('🔄 Conexión restaurada, sincronizando...');
+        await initializeFirebase();
+        await sincronizarConFirebase();
+    });
+    
+    // Event listener para detectar cuando se va offline
+    window.addEventListener('offline', function() {
+        console.log('📱 Modo offline activado');
+        mostrarEstadoConexion('offline');
+        mostrarMensaje('📱 Modo offline - los cambios se guardarán localmente', 'info');
+    });
 }
+    
+    console.log('✅ Gestor de Tareas DAM inicializado correctamente');
+
 
 // ========================================
 // 6. FUNCIONES ADICIONALES DE UTILIDAD
