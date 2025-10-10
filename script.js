@@ -14,6 +14,9 @@ let filtroActual = 'Todas';
 // Estado de inicialización
 let appInicializada = false;
 
+// Estado de tareas expandidas (para tareas entregadas)
+let tareasExpandidas = new Set();
+
 // ========================================
 // 2. FUNCIONES DE UTILIDAD
 // ========================================
@@ -365,35 +368,8 @@ function crearHTMLTarea(tarea) {
     const completadaClase = miProgreso ? 'bg-green-50 border-l-4 border-green-400' : '';
     const tituloClase = miProgreso ? 'text-green-800' : 'text-gray-800';
     
-    // Obtener estadísticas de progreso general
-    const stats = obtenerEstadisticasTarea(tarea);
-    
-    // Generar HTML de estadísticas colaborativas (más compacto en móvil)
-    const htmlEstadisticas = stats.total > 0 ? `
-        <div class="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs sm:text-sm font-medium text-gray-700">Progreso de la clase</span>
-                <span class="text-xs sm:text-sm text-gray-600">${stats.completadas}/${stats.total}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-1.5 sm:h-2 mb-2">
-                <div class="bg-indigo-600 h-1.5 sm:h-2 rounded-full transition-all" style="width: ${stats.porcentaje}%"></div>
-            </div>
-            <div class="flex flex-wrap gap-1">
-                ${stats.usuarios.map(usuario => {
-                    const completado = obtenerProgresoUsuario(tarea, usuario);
-                    const esYo = usuario === usuarioActual;
-                    const nombreCorto = usuario.length > 8 ? usuario.substring(0, 6) + '...' : usuario;
-                    return `
-                        <span class="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
-                            completado ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        } ${esYo ? 'ring-1 sm:ring-2 ring-indigo-400 font-medium' : ''}">
-                            ${esYo ? '👤 ' : ''}${nombreCorto}${completado ? ' ✓' : ''}
-                        </span>
-                    `;
-                }).join('')}
-            </div>
-        </div>
-    ` : '';
+    // No mostrar estadísticas de progreso general de la clase
+    const htmlEstadisticas = '';
     
     // Mostrar botón de eliminar solo para administradores
     const botonEliminar = esAdministrador ? `
@@ -403,18 +379,112 @@ function crearHTMLTarea(tarea) {
             <i data-lucide="trash-2" size="18"></i>
         </button>
     ` : '';
+
+    // Si la tarea está entregada, mostrar versión minimizada o expandida
+    if (miProgreso) {
+        const estaExpandida = tareasExpandidas.has(tarea.id);
+        
+        if (!estaExpandida) {
+            // Versión minimizada para tareas entregadas
+            return `
+                <div class="bg-green-50 border-l-4 border-green-400 rounded-xl shadow-md p-3 sm:p-4 transition-all hover:shadow-lg">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <button onclick="toggleCompletada('${tarea.id}')" 
+                                    class="text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    title="Marcar como pendiente">
+                                <i data-lucide="check-circle" size="20"></i>
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 sm:gap-3">
+                                    <h3 class="text-sm sm:text-lg font-semibold text-green-800 truncate">
+                                        ${tarea.titulo}
+                                    </h3>
+                                    <span class="px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs sm:text-sm rounded-full font-medium">
+                                        ✓ Entregada
+                                    </span>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${tipoClase}">
+                                        ${tipoTexto}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="expandirTarea('${tarea.id}')" 
+                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
+                                title="Ver detalles">
+                            <i data-lucide="chevron-down" size="18"></i>
+                        </button>
+                        
+                        ${botonEliminar}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Versión expandida para tareas entregadas
+            return `
+                <div class="bg-green-50 border-l-4 border-green-400 rounded-xl shadow-lg p-3 sm:p-6 transition-all hover:shadow-xl">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
+                            <button onclick="toggleCompletada('${tarea.id}')" 
+                                    class="mt-1 text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    title="Marcar como pendiente">
+                                <i data-lucide="check-circle" size="20"></i>
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-2">
+                                    <h3 class="text-base sm:text-xl font-semibold text-green-800 truncate">
+                                        ${tarea.titulo}
+                                    </h3>
+                                    <div class="flex flex-wrap gap-1 sm:gap-2">
+                                        <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${tipoClase}">
+                                            ${tipoTexto}
+                                        </span>
+                                        <span class="px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs sm:text-sm rounded-full font-medium">
+                                            ✓ Entregada
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-1 text-xs sm:text-sm text-gray-600">
+                                    <p class="truncate"><strong>Asignatura:</strong> ${tarea.asignatura}</p>
+                                    <p class="flex items-center gap-1 sm:gap-2">
+                                        <i data-lucide="calendar" size="14"></i>
+                                        <strong>Fecha:</strong> 
+                                        <span class="text-xs sm:text-sm">${fechaFormateada}</span>
+                                    </p>
+                                    <p class="truncate"><strong>Plataforma:</strong> ${tarea.plataforma}</p>
+                                    ${tarea.descripcion ? `<p class="mt-1 sm:mt-2 text-gray-700 text-xs sm:text-sm break-words">${tarea.descripcion}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-2">
+                            <button onclick="expandirTarea('${tarea.id}')" 
+                                    class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                    title="Minimizar">
+                                <i data-lucide="chevron-up" size="18"></i>
+                            </button>
+                            
+                            ${botonEliminar}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
     
+    // Versión completa para tareas pendientes
     return `
         <div class="bg-white rounded-xl shadow-lg p-3 sm:p-6 transition-all hover:shadow-xl ${completadaClase}">
             <div class="flex items-start justify-between gap-2">
                 <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
                     <button onclick="toggleCompletada('${tarea.id}')" 
                             class="mt-1 text-gray-400 hover:text-indigo-600 transition-colors flex-shrink-0"
-                            title="Marcar tu progreso personal">
-                        ${miProgreso ? 
-                            '<i data-lucide="check-circle" class="text-green-600" size="20"></i>' : 
-                            '<i data-lucide="circle" size="20"></i>'
-                        }
+                            title="Marcar como entregada">
+                        <i data-lucide="circle" size="20"></i>
                     </button>
                     
                     <div class="flex-1 min-w-0">
@@ -426,7 +496,6 @@ function crearHTMLTarea(tarea) {
                                 <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${tipoClase}">
                                     ${tipoTexto}
                                 </span>
-                                ${miProgreso ? '<span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">✓</span>' : ''}
                             </div>
                         </div>
                         
@@ -608,6 +677,21 @@ function configurarEventListeners() {
 // ========================================
 
 /**
+ * Alterna entre vista expandida y minimizada de una tarea entregada
+ * @param {string} id - ID de la tarea
+ */
+function expandirTarea(id) {
+    if (tareasExpandidas.has(id)) {
+        tareasExpandidas.delete(id);
+    } else {
+        tareasExpandidas.add(id);
+    }
+    
+    // Re-renderizar solo para actualizar la vista
+    renderizarTareas();
+}
+
+/**
  * Exporta las tareas a un archivo JSON
  */
 function exportarTareas() {
@@ -666,3 +750,4 @@ window.toggleCompletada = toggleCompletada;
 window.eliminarTarea = eliminarTarea;
 window.exportarTareas = exportarTareas;
 window.obtenerEstadisticas = obtenerEstadisticas;
+window.expandirTarea = expandirTarea;
