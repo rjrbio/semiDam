@@ -135,13 +135,7 @@ async function mostrarModalLogin() {
                            placeholder="Tu nombre o apodo">
                 </div>
                 
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h3 class="font-medium text-blue-800 mb-2">Tipos de usuario:</h3>
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        <li>👨‍🎓 <strong>Estudiante</strong>: Puede marcar progreso personal</li>
-                        <li>👨‍🏫 <strong>Administrador</strong>: Puede crear/eliminar tareas</li>
-                    </ul>
-                </div>
+
                 
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition-colors">
                     <span id="texto-boton-login">Entrar</span>
