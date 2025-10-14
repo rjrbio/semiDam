@@ -135,13 +135,7 @@ async function mostrarModalLogin() {
                            placeholder="Tu nombre o apodo">
                 </div>
                 
-                <div class="bg-blue-50 p-4 rounded-lg">
-                    <h3 class="font-medium text-blue-800 mb-2">Tipos de usuario:</h3>
-                    <ul class="text-sm text-blue-700 space-y-1">
-                        <li>👨‍🎓 <strong>Estudiante</strong>: Puede marcar progreso personal</li>
-                        <li>👨‍🏫 <strong>Administrador</strong>: Puede crear/eliminar tareas</li>
-                    </ul>
-                </div>
+
                 
                 <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition-colors">
                     <span id="texto-boton-login">Entrar</span>
@@ -317,33 +311,40 @@ async function iniciarSesion(nombreUsuario, rolUsuario = null) {
  * Muestra la interfaz del usuario actual
  */
 function mostrarInterfazUsuario() {
-    // Crear indicador de usuario en el header
-    const header = document.querySelector('header .flex.items-center.justify-between');
-    if (header && !document.getElementById('usuario-info')) {
+    // Remover interfaz anterior si existe
+    const infoExistente = document.getElementById('usuario-info');
+    if (infoExistente) {
+        infoExistente.remove();
+    }
+    
+    // Buscar el header y el container de botones
+    const header = document.querySelector('header');
+    const botonesContainer = document.querySelector('#btn-sincronizar').parentElement;
+    
+    if (header && botonesContainer) {
         const infoUsuario = document.createElement('div');
         infoUsuario.id = 'usuario-info';
         infoUsuario.className = 'flex items-center gap-2 text-sm';
         
-        const tipoUsuario = esAdministrador ? 'Administrador' : 'Estudiante';
+        const tipoUsuario = esAdministrador ? 'Admin' : 'Estudiante';
         const iconoUsuario = esAdministrador ? 'shield-check' : 'user';
         const colorUsuario = esAdministrador ? 'text-green-600' : 'text-blue-600';
         
         infoUsuario.innerHTML = `
-            <div class="flex items-center gap-2 ${colorUsuario}">
-                <i data-lucide="${iconoUsuario}" size="16"></i>
-                <span class="font-medium">${usuarioActual}</span>
-                <span class="text-xs px-2 py-1 bg-gray-100 rounded">${tipoUsuario}</span>
+            <div class="flex items-center gap-1 ${colorUsuario} bg-white border border-gray-200 rounded-lg px-2 py-1">
+                <i data-lucide="${iconoUsuario}" size="14"></i>
+                <span class="font-medium text-xs">${usuarioActual}</span>
+                <span class="text-xs px-1 py-0.5 bg-gray-100 rounded text-gray-600">${tipoUsuario}</span>
+                <button onclick="cerrarSesion()" 
+                        class="ml-1 text-gray-400 hover:text-red-500 transition-colors" 
+                        title="Cerrar sesión">
+                    <i data-lucide="log-out" size="12"></i>
+                </button>
             </div>
-            <button onclick="cerrarSesion()" 
-                    class="ml-2 text-gray-400 hover:text-red-500 transition-colors" 
-                    title="Cerrar sesión">
-                <i data-lucide="log-out" size="16"></i>
-            </button>
         `;
         
-        // Insertar antes de los botones
-        const botones = header.querySelector('.flex.gap-3');
-        header.insertBefore(infoUsuario, botones);
+        // Insertar antes del primer botón
+        botonesContainer.insertBefore(infoUsuario, botonesContainer.firstChild);
         
         // Actualizar la interfaz según el rol
         actualizarInterfazSegunRol();
@@ -352,6 +353,10 @@ function mostrarInterfazUsuario() {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        
+        console.log('✅ Interfaz de usuario mostrada correctamente para:', usuarioActual);
+    } else {
+        console.error('❌ No se pudo encontrar el header o el container de botones');
     }
 }
 
@@ -499,6 +504,14 @@ function obtenerEstadisticasTarea(tarea) {
         usuarios: usuarios
     };
 }
+
+// Hacer funciones disponibles globalmente
+window.iniciarSesion = iniciarSesion;
+window.cerrarSesion = cerrarSesion;
+
+// Hacer variables globales accesibles
+window.getUsuarioActual = () => usuarioActual;
+window.getEsAdministrador = () => esAdministrador;
 
 // Hacer funciones disponibles globalmente
 window.iniciarSesion = iniciarSesion;

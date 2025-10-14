@@ -14,6 +14,13 @@ let filtroActual = 'Todas';
 // Estado de inicialización
 let appInicializada = false;
 
+// Estado de tareas expandidas (para tareas entregadas)
+let tareasExpandidas = new Set();
+
+// Estado de edición
+let modoEdicion = false;
+let tareaEditando = null;
+
 // ========================================
 // 2. FUNCIONES DE UTILIDAD
 // ========================================
@@ -232,6 +239,51 @@ async function eliminarTarea(id) {
 }
 
 /**
+ * Actualiza una tarea existente
+ * @param {string} id - ID de la tarea a actualizar
+ * @param {Object} nuevoDatos - Nuevos datos de la tarea
+ */
+async function actualizarTarea(id, nuevoDatos) {
+    try {
+        // Encontrar la tarea en el array local
+        const indice = tareas.findIndex(t => t.id === id);
+        if (indice === -1) {
+            throw new Error('Tarea no encontrada');
+        }
+        
+        // Preservar datos importantes de la tarea original
+        const tareaOriginal = tareas[indice];
+        const tareaActualizada = {
+            ...tareaOriginal,
+            ...nuevoDatos,
+            // Preservar progreso de usuarios y fecha de creación
+            progresoUsuarios: tareaOriginal.progresoUsuarios || {},
+            fechaCreacion: tareaOriginal.fechaCreacion || new Date().toISOString()
+        };
+        
+        // Actualizar en Firebase si está conectado
+        if (isFirebaseConnected && !id.startsWith('temp_')) {
+            await actualizarTareaFirebase(id, tareaActualizada);
+        }
+        
+        // Actualizar en el array local
+        tareas[indice] = tareaActualizada;
+        
+        // Guardar respaldo local
+        guardarTareasLocal();
+        
+        // Re-renderizar tareas
+        renderizarTareas();
+        
+        console.log(`✅ Tarea actualizada: ${tareaActualizada.titulo}`);
+        
+    } catch (error) {
+        console.error('❌ Error actualizando tarea:', error);
+        throw error;
+    }
+}
+
+/**
  * Cambia el estado de completada de una tarea
  * @param {string} id - ID de la tarea
  */
@@ -365,35 +417,8 @@ function crearHTMLTarea(tarea) {
     const completadaClase = miProgreso ? 'bg-green-50 border-l-4 border-green-400' : '';
     const tituloClase = miProgreso ? 'text-green-800' : 'text-gray-800';
     
-    // Obtener estadísticas de progreso general
-    const stats = obtenerEstadisticasTarea(tarea);
-    
-    // Generar HTML de estadísticas colaborativas (más compacto en móvil)
-    const htmlEstadisticas = stats.total > 0 ? `
-        <div class="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs sm:text-sm font-medium text-gray-700">Progreso de la clase</span>
-                <span class="text-xs sm:text-sm text-gray-600">${stats.completadas}/${stats.total}</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-1.5 sm:h-2 mb-2">
-                <div class="bg-indigo-600 h-1.5 sm:h-2 rounded-full transition-all" style="width: ${stats.porcentaje}%"></div>
-            </div>
-            <div class="flex flex-wrap gap-1">
-                ${stats.usuarios.map(usuario => {
-                    const completado = obtenerProgresoUsuario(tarea, usuario);
-                    const esYo = usuario === usuarioActual;
-                    const nombreCorto = usuario.length > 8 ? usuario.substring(0, 6) + '...' : usuario;
-                    return `
-                        <span class="text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
-                            completado ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                        } ${esYo ? 'ring-1 sm:ring-2 ring-indigo-400 font-medium' : ''}">
-                            ${esYo ? '👤 ' : ''}${nombreCorto}${completado ? ' ✓' : ''}
-                        </span>
-                    `;
-                }).join('')}
-            </div>
-        </div>
-    ` : '';
+    // No mostrar estadísticas de progreso general de la clase
+    const htmlEstadisticas = '';
     
     // Mostrar botón de eliminar solo para administradores
     const botonEliminar = esAdministrador ? `
@@ -403,18 +428,128 @@ function crearHTMLTarea(tarea) {
             <i data-lucide="trash-2" size="18"></i>
         </button>
     ` : '';
+
+    // Si la tarea está entregada, mostrar versión minimizada o expandida
+    if (miProgreso) {
+        const estaExpandida = tareasExpandidas.has(tarea.id);
+        
+        if (!estaExpandida) {
+            // Versión minimizada para tareas entregadas
+            return `
+                <div class="bg-green-50 border-l-4 border-green-400 rounded-xl shadow-md p-3 sm:p-4 transition-all hover:shadow-lg">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                            <button onclick="toggleCompletada('${tarea.id}')" 
+                                    class="text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    title="Marcar como pendiente">
+                                <i data-lucide="check-circle" size="20"></i>
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 sm:gap-3">
+                                    <h3 class="text-sm sm:text-lg font-semibold text-green-800 truncate">
+                                        ${tarea.titulo}
+                                    </h3>
+                                    <span class="px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs sm:text-sm rounded-full font-medium">
+                                        ✓ Entregada
+                                    </span>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${tipoClase}">
+                                        ${tipoTexto}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="expandirTarea('${tarea.id}')" 
+                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
+                                title="Ver detalles">
+                            <i data-lucide="chevron-down" size="18"></i>
+                        </button>
+                        
+                        ${esAdministrador ? `
+                        <button onclick="editarTarea('${tarea.id}')" 
+                                class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0 ml-2"
+                                title="Editar tarea (solo administradores)">
+                            <i data-lucide="edit" size="18"></i>
+                        </button>
+                        ` : ''}
+                        
+                        ${botonEliminar}
+                    </div>
+                </div>
+            `;
+        } else {
+            // Versión expandida para tareas entregadas
+            return `
+                <div class="bg-green-50 border-l-4 border-green-400 rounded-xl shadow-lg p-3 sm:p-6 transition-all hover:shadow-xl">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
+                            <button onclick="toggleCompletada('${tarea.id}')" 
+                                    class="mt-1 text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    title="Marcar como pendiente">
+                                <i data-lucide="check-circle" size="20"></i>
+                            </button>
+                            
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-2">
+                                    <h3 class="text-base sm:text-xl font-semibold text-green-800 truncate">
+                                        ${tarea.titulo}
+                                    </h3>
+                                    <div class="flex flex-wrap gap-1 sm:gap-2">
+                                        <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${tipoClase}">
+                                            ${tipoTexto}
+                                        </span>
+                                        <span class="px-2 sm:px-3 py-1 bg-green-100 text-green-700 text-xs sm:text-sm rounded-full font-medium">
+                                            ✓ Entregada
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-1 text-xs sm:text-sm text-gray-600">
+                                    <p class="truncate"><strong>Asignatura:</strong> ${tarea.asignatura}</p>
+                                    <p class="flex items-center gap-1 sm:gap-2">
+                                        <i data-lucide="calendar" size="14"></i>
+                                        <strong>Fecha:</strong> 
+                                        <span class="text-xs sm:text-sm">${fechaFormateada}</span>
+                                    </p>
+                                    <p class="truncate"><strong>Plataforma:</strong> ${tarea.plataforma}</p>
+                                    ${tarea.descripcion ? `<p class="mt-1 sm:mt-2 text-gray-700 text-xs sm:text-sm break-words">${tarea.descripcion}</p>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start gap-2">
+                            <button onclick="expandirTarea('${tarea.id}')" 
+                                    class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                    title="Minimizar">
+                                <i data-lucide="chevron-up" size="18"></i>
+                            </button>
+                            
+                            ${esAdministrador ? `
+                            <button onclick="editarTarea('${tarea.id}')" 
+                                    class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                                    title="Editar tarea (solo administradores)">
+                                <i data-lucide="edit" size="18"></i>
+                            </button>
+                            ` : ''}
+                            
+                            ${botonEliminar}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
     
+    // Versión completa para tareas pendientes
     return `
         <div class="bg-white rounded-xl shadow-lg p-3 sm:p-6 transition-all hover:shadow-xl ${completadaClase}">
             <div class="flex items-start justify-between gap-2">
                 <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
                     <button onclick="toggleCompletada('${tarea.id}')" 
                             class="mt-1 text-gray-400 hover:text-indigo-600 transition-colors flex-shrink-0"
-                            title="Marcar tu progreso personal">
-                        ${miProgreso ? 
-                            '<i data-lucide="check-circle" class="text-green-600" size="20"></i>' : 
-                            '<i data-lucide="circle" size="20"></i>'
-                        }
+                            title="Marcar como entregada">
+                        <i data-lucide="circle" size="20"></i>
                     </button>
                     
                     <div class="flex-1 min-w-0">
@@ -426,7 +561,6 @@ function crearHTMLTarea(tarea) {
                                 <span class="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm font-medium ${tipoClase}">
                                     ${tipoTexto}
                                 </span>
-                                ${miProgreso ? '<span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">✓</span>' : ''}
                             </div>
                         </div>
                         
@@ -445,7 +579,17 @@ function crearHTMLTarea(tarea) {
                     </div>
                 </div>
                 
-                ${botonEliminar}
+                <div class="flex items-start gap-2">
+                    ${esAdministrador ? `
+                    <button onclick="editarTarea('${tarea.id}')" 
+                            class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                            title="Editar tarea (solo administradores)">
+                        <i data-lucide="edit" size="18"></i>
+                    </button>
+                    ` : ''}
+                    
+                    ${botonEliminar}
+                </div>
             </div>
         </div>
     `;
@@ -529,7 +673,10 @@ async function inicializarApp() {
  */
 function configurarEventListeners() {
     // Event listener para el botón de nueva tarea
-    document.getElementById('btn-nueva-tarea').addEventListener('click', toggleFormulario);
+    document.getElementById('btn-nueva-tarea').addEventListener('click', function() {
+        cancelarEdicion(); // Cancelar cualquier edición en curso
+        toggleFormulario();
+    });
     
     // Event listener para el botón de sincronización
     document.getElementById('btn-sincronizar').addEventListener('click', async function() {
@@ -540,7 +687,10 @@ function configurarEventListeners() {
     });
     
     // Event listener para el botón de cancelar
-    document.getElementById('btn-cancelar').addEventListener('click', toggleFormulario);
+    document.getElementById('btn-cancelar').addEventListener('click', function() {
+        cancelarEdicion();
+        toggleFormulario();
+    });
     
     // Event listener para el formulario
     document.getElementById('form-tarea').addEventListener('submit', async function(e) {
@@ -563,11 +713,27 @@ function configurarEventListeners() {
             return;
         }
         
-        // Añadir tarea
-        await agregarTarea(datosFormulario);
-        
-        // Ocultar formulario
-        toggleFormulario();
+        try {
+            if (modoEdicion && tareaEditando) {
+                // Actualizar tarea existente
+                await actualizarTarea(tareaEditando.id, datosFormulario);
+                mostrarMensaje('✅ Tarea actualizada correctamente', 'exito');
+            } else {
+                // Crear nueva tarea
+                await agregarTarea(datosFormulario);
+                mostrarMensaje('✅ Tarea agregada correctamente', 'exito');
+            }
+            
+            // Limpiar modo edición
+            cancelarEdicion();
+            
+            // Ocultar formulario
+            toggleFormulario();
+            
+        } catch (error) {
+            console.error('❌ Error al procesar tarea:', error);
+            mostrarMensaje('❌ Error al procesar la tarea', 'error');
+        }
     });
     
     // Event listeners para los filtros
@@ -606,6 +772,93 @@ function configurarEventListeners() {
 // ========================================
 // 6. FUNCIONES ADICIONALES DE UTILIDAD
 // ========================================
+
+/**
+ * Alterna entre vista expandida y minimizada de una tarea entregada
+ * @param {string} id - ID de la tarea
+ */
+function expandirTarea(id) {
+    if (tareasExpandidas.has(id)) {
+        tareasExpandidas.delete(id);
+    } else {
+        tareasExpandidas.add(id);
+    }
+    
+    // Re-renderizar solo para actualizar la vista
+    renderizarTareas();
+}
+
+/**
+ * Activa el modo edición para una tarea específica
+ * @param {string} id - ID de la tarea a editar
+ */
+function editarTarea(id) {
+    if (!esAdministrador) {
+        mostrarMensaje('❌ Solo los administradores pueden editar tareas', 'error');
+        return;
+    }
+    
+    const tarea = tareas.find(t => t.id === id);
+    if (!tarea) {
+        mostrarMensaje('❌ Tarea no encontrada', 'error');
+        return;
+    }
+    
+    // Activar modo edición
+    modoEdicion = true;
+    tareaEditando = tarea;
+    
+    // Mostrar formulario
+    const formulario = document.getElementById('formulario-tarea');
+    const titulo = document.querySelector('#formulario-tarea h2');
+    const botonSubmit = document.querySelector('#form-tarea button[type="submit"]');
+    
+    if (formulario && titulo && botonSubmit) {
+        formulario.classList.remove('hidden');
+        titulo.textContent = 'Editar Tarea o Examen';
+        botonSubmit.textContent = 'Actualizar';
+        
+        // Cargar datos en el formulario
+        cargarDatosEnFormulario(tarea);
+        
+        // Scroll hacia el formulario
+        formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        console.log(`📝 Editando tarea: ${tarea.titulo}`);
+    }
+}
+
+/**
+ * Carga los datos de una tarea en el formulario para edición
+ * @param {Object} tarea - Objeto tarea a cargar
+ */
+function cargarDatosEnFormulario(tarea) {
+    document.getElementById('titulo').value = tarea.titulo || '';
+    document.getElementById('asignatura').value = tarea.asignatura || '';
+    document.getElementById('tipo').value = tarea.tipo || 'tarea';
+    document.getElementById('fecha').value = tarea.fecha || '';
+    document.getElementById('plataforma').value = tarea.plataforma || '';
+    document.getElementById('descripcion').value = tarea.descripcion || '';
+}
+
+/**
+ * Cancela el modo edición y limpia el formulario
+ */
+function cancelarEdicion() {
+    modoEdicion = false;
+    tareaEditando = null;
+    
+    const titulo = document.querySelector('#formulario-tarea h2');
+    const botonSubmit = document.querySelector('#form-tarea button[type="submit"]');
+    
+    if (titulo && botonSubmit) {
+        titulo.textContent = 'Añadir Tarea o Examen';
+        botonSubmit.textContent = 'Agregar';
+    }
+    
+    // Limpiar formulario
+    document.getElementById('form-tarea').reset();
+}
 
 /**
  * Exporta las tareas a un archivo JSON
@@ -666,3 +919,5 @@ window.toggleCompletada = toggleCompletada;
 window.eliminarTarea = eliminarTarea;
 window.exportarTareas = exportarTareas;
 window.obtenerEstadisticas = obtenerEstadisticas;
+window.expandirTarea = expandirTarea;
+window.editarTarea = editarTarea;
