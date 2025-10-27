@@ -11,6 +11,9 @@ let tareas = [];
 // Filtro actual activo
 let filtroActual = 'Todas';
 
+// Vista actual (lista o calendario)
+let vistaActual = 'lista';
+
 // Estado de inicialización
 let appInicializada = false;
 
@@ -235,6 +238,43 @@ async function eliminarTarea(id) {
 }
 
 /**
+ * Archiva o desarchivauna tarea
+ * @param {string} id - ID de la tarea
+ */
+async function archivarTarea(id) {
+    try {
+        const tarea = tareas.find(t => t.id === id);
+        if (!tarea) {
+            throw new Error('Tarea no encontrada');
+        }
+        
+        // Cambiar estado de archivado
+        const nuevoEstado = !tarea.archivada;
+        tarea.archivada = nuevoEstado;
+        
+        // Actualizar en Firebase si está conectado
+        if (isFirebaseConnected && !id.startsWith('temp_')) {
+            await actualizarTareaFirebase(id, { archivada: nuevoEstado });
+        }
+        
+        // Guardar respaldo local
+        guardarTareasLocal();
+        
+        // Re-renderizar tareas
+        renderizarTareas();
+        
+        const mensaje = nuevoEstado ? 
+            '📦 Tarea archivada correctamente' : 
+            '📤 Tarea desarchivada correctamente';
+        mostrarMensaje(mensaje, 'info');
+        
+    } catch (error) {
+        console.error('❌ Error archivando tarea:', error);
+        mostrarMensaje('❌ Error archivando tarea', 'error');
+    }
+}
+
+/**
  * Cambia el estado de completada de una tarea
  * @param {string} id - ID de la tarea
  */
@@ -272,14 +312,22 @@ async function toggleCompletada(id) {
 }
 
 /**
- * Filtra las tareas según el filtro activo
+ * Obtiene las tareas filtradas según el filtro actual
  * @returns {Array} - Array de tareas filtradas
  */
 function obtenerTareasFiltradas() {
     let tareasFiltradas = tareas;
     
-    if (filtroActual !== 'Todas') {
-        tareasFiltradas = tareas.filter(tarea => tarea.asignatura === filtroActual);
+    // Excluir tareas archivadas (a menos que el filtro sea 'Archivadas')
+    if (filtroActual !== 'Archivadas') {
+        tareasFiltradas = tareas.filter(tarea => !tarea.archivada);
+    } else {
+        tareasFiltradas = tareas.filter(tarea => tarea.archivada);
+    }
+    
+    // Aplicar filtro de asignatura
+    if (filtroActual !== 'Todas' && filtroActual !== 'Archivadas') {
+        tareasFiltradas = tareasFiltradas.filter(tarea => tarea.asignatura === filtroActual);
     }
     
     // Ordenar por fecha (más próximas primero)
@@ -417,6 +465,14 @@ function crearHTMLTarea(tarea) {
                             <i data-lucide="chevron-down" size="18"></i>
                         </button>
                         
+                        ${esAdministrador ? `
+                        <button onclick="archivarTarea('${tarea.id}')" 
+                                class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0 ml-2"
+                                title="Archivar tarea">
+                            <i data-lucide="archive" size="18"></i>
+                        </button>
+                        ` : ''}
+                        
                         ${botonEliminar}
                     </div>
                 </div>
@@ -468,6 +524,14 @@ function crearHTMLTarea(tarea) {
                                 <i data-lucide="chevron-up" size="18"></i>
                             </button>
                             
+                            ${esAdministrador ? `
+                            <button onclick="archivarTarea('${tarea.id}')" 
+                                    class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
+                                    title="Archivar tarea">
+                                <i data-lucide="archive" size="18"></i>
+                            </button>
+                            ` : ''}
+                            
                             ${botonEliminar}
                         </div>
                     </div>
@@ -514,7 +578,17 @@ function crearHTMLTarea(tarea) {
                     </div>
                 </div>
                 
-                ${botonEliminar}
+                <div class="flex items-start gap-2">
+                    ${esAdministrador ? `
+                    <button onclick="archivarTarea('${tarea.id}')" 
+                            class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
+                            title="Archivar tarea">
+                        <i data-lucide="archive" size="18"></i>
+                    </button>
+                    ` : ''}
+                    
+                    ${botonEliminar}
+                </div>
             </div>
         </div>
     `;
@@ -524,9 +598,184 @@ function crearHTMLTarea(tarea) {
  * Renderiza todas las tareas en el DOM
  */
 function renderizarTareas() {
+    if (vistaActual === 'calendario') {
+        renderizarCalendario();
+        return;
+    }
+    
     const contenedorTareas = document.getElementById('lista-tareas');
     const tareasFiltradas = obtenerTareasFiltradas();
     
+    if (tareasFiltradas.length === 0) {
+        const mensajeVacio = filtroActual === 'Archivadas' ? 
+            'No hay tareas archivadas' : 
+            'No hay tareas pendientes';
+        contenedorTareas.innerHTML = `
+            <div class="bg-white rounded-xl shadow-lg p-6 sm:p-12 text-center">
+                <p class="text-gray-500 text-base sm:text-lg">${mensajeVacio}</p>
+                <p class="text-gray-400 mt-2 text-sm sm:text-base">¡Añade tu primera tarea para empezar!</p>
+            </div>
+        `;
+    } else {
+        contenedorTareas.innerHTML = tareasFiltradas.map(crearHTMLTarea).join('');
+    }
+    
+    // Reinicializar iconos después de añadir nuevo contenido
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * Cambia entre vista de lista y calendario
+ * @param {string} vista - 'lista' o 'calendario'
+ */
+function cambiarVista(vista) {
+    vistaActual = vista;
+    
+    const listaContainer = document.getElementById('lista-tareas');
+    const calendarioContainer = document.getElementById('vista-calendario');
+    const btnLista = document.getElementById('btn-vista-lista');
+    const btnCalendario = document.getElementById('btn-vista-calendario');
+    
+    if (vista === 'lista') {
+        listaContainer.classList.remove('hidden');
+        calendarioContainer.classList.add('hidden');
+        btnLista.className = 'vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm flex items-center gap-1';
+        btnCalendario.className = 'vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm flex items-center gap-1';
+        renderizarTareas();
+    } else {
+        listaContainer.classList.add('hidden');
+        calendarioContainer.classList.remove('hidden');
+        btnLista.className = 'vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm flex items-center gap-1';
+        btnCalendario.className = 'vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm flex items-center gap-1';
+        renderizarCalendario();
+    }
+}
+
+/**
+ * Renderiza el calendario con las tareas
+ */
+function renderizarCalendario() {
+    const calendarioContainer = document.getElementById('vista-calendario');
+    const hoy = new Date();
+    const mesActual = hoy.getMonth();
+    const añoActual = hoy.getFullYear();
+    
+    // Obtener tareas no archivadas
+    const tareasNoArchivadas = tareas.filter(t => !t.archivada);
+    
+    // Crear mapa de tareas por fecha
+    const tareasPorFecha = {};
+    tareasNoArchivadas.forEach(tarea => {
+        const fecha = tarea.fecha;
+        if (!tareasPorFecha[fecha]) {
+            tareasPorFecha[fecha] = [];
+        }
+        tareasPorFecha[fecha].push(tarea);
+    });
+    
+    // Generar calendario
+    const primerDia = new Date(añoActual, mesActual, 1);
+    const ultimoDia = new Date(añoActual, mesActual + 1, 0);
+    const diasMes = ultimoDia.getDate();
+    const diaSemanaInicio = primerDia.getDay();
+    
+    const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    
+    let htmlCalendario = `
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+            <div class="mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 text-center">
+                    ${meses[mesActual]} ${añoActual}
+                </h2>
+            </div>
+            
+            <div class="grid grid-cols-7 gap-2">
+                ${diasSemana.map(dia => `
+                    <div class="text-center font-semibold text-gray-600 text-xs sm:text-sm p-2">
+                        ${dia}
+                    </div>
+                `).join('')}
+                
+                ${Array.from({length: diaSemanaInicio}, () => `
+                    <div class="p-2 sm:p-4"></div>
+                `).join('')}
+                
+                ${Array.from({length: diasMes}, (_, i) => {
+                    const dia = i + 1;
+                    const fechaStr = `${añoActual}-${String(mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const tareasDelDia = tareasPorFecha[fechaStr] || [];
+                    const esHoy = dia === hoy.getDate();
+                    
+                    return `
+                        <div class="p-2 sm:p-3 border rounded-lg ${esHoy ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200'} hover:shadow-md transition-all min-h-[60px] sm:min-h-[80px]">
+                            <div class="font-semibold text-sm sm:text-base ${esHoy ? 'text-indigo-600' : 'text-gray-700'}">
+                                ${dia}
+                            </div>
+                            <div class="mt-1 space-y-1">
+                                ${tareasDelDia.slice(0, 3).map(tarea => {
+                                    const tipoColor = tarea.tipo === 'examen' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
+                                    const miProgreso = obtenerProgresoUsuario(tarea, usuarioActual);
+                                    return `
+                                        <div class="text-xs px-1 py-0.5 rounded ${tipoColor} truncate ${miProgreso ? 'opacity-50' : ''}" title="${tarea.titulo}">
+                                            ${miProgreso ? '✓ ' : ''}${tarea.titulo}
+                                        </div>
+                                    `;
+                                }).join('')}
+                                ${tareasDelDia.length > 3 ? `
+                                    <div class="text-xs text-gray-500 italic">
+                                        +${tareasDelDia.length - 3} más
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <div class="mt-6 flex flex-wrap gap-4 justify-center">
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                    <span class="text-sm text-gray-600">Tareas</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
+                    <span class="text-sm text-gray-600">Exámenes</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-4 h-4 bg-indigo-50 border border-indigo-300 rounded"></div>
+                    <span class="text-sm text-gray-600">Hoy</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    calendarioContainer.innerHTML = htmlCalendario;
+    
+    // Reinicializar iconos
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * Renderiza todas las tareas en el DOM (versión antigua - mantenida por compatibilidad)
+ */
+function renderizarTareas() {
+    const contenedorTareas = document.getElementById('lista-tareas');
+    const tareasFiltradas = obtenerTareasFiltradas();
+}
+
+/**
+ * Renderiza todas las tareas en el DOM (versión antigua - mantenida por compatibilidad)
+ */
+function renderizarTareasLegacy() {
+    const contenedorTareas = document.getElementById('lista-tareas');
+    const tareasFiltradas = obtenerTareasFiltradas();
+
     if (tareasFiltradas.length === 0) {
         contenedorTareas.innerHTML = `
             <div class="bg-white rounded-xl shadow-lg p-6 sm:p-12 text-center">
@@ -646,6 +895,15 @@ function configurarEventListeners() {
         });
     });
     
+    // Event listeners para los botones de vista
+    document.getElementById('btn-vista-lista')?.addEventListener('click', function() {
+        cambiarVista('lista');
+    });
+    
+    document.getElementById('btn-vista-calendario')?.addEventListener('click', function() {
+        cambiarVista('calendario');
+    });
+    
     // Event listener para sincronización manual (Ctrl+R o F5)
     document.addEventListener('keydown', async function(e) {
         if ((e.ctrlKey && e.key === 'r') || e.key === 'F5') {
@@ -667,10 +925,9 @@ function configurarEventListeners() {
         mostrarEstadoConexion('offline');
         mostrarMensaje('📱 Modo offline - los cambios se guardarán localmente', 'info');
     });
-}
     
     console.log('✅ Gestor de Tareas DAM inicializado correctamente');
-
+}
 
 // ========================================
 // 6. FUNCIONES ADICIONALES DE UTILIDAD
@@ -751,3 +1008,5 @@ window.eliminarTarea = eliminarTarea;
 window.exportarTareas = exportarTareas;
 window.obtenerEstadisticas = obtenerEstadisticas;
 window.expandirTarea = expandirTarea;
+window.archivarTarea = archivarTarea;
+window.cambiarVista = cambiarVista;
