@@ -486,6 +486,11 @@ function crearHTMLTarea(tarea) {
                         </button>
                         
                         ${esAdministrador ? `
+                        <button onclick="editarTarea('${tarea.id}')" 
+                                class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0 ml-2"
+                                title="Editar tarea">
+                            <i data-lucide="edit" size="18"></i>
+                        </button>
                         <button onclick="archivarTarea('${tarea.id}')" 
                                 class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0 ml-2"
                                 title="Archivar tarea">
@@ -545,6 +550,11 @@ function crearHTMLTarea(tarea) {
                             </button>
                             
                             ${esAdministrador ? `
+                            <button onclick="editarTarea('${tarea.id}')" 
+                                    class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                                    title="Editar tarea">
+                                <i data-lucide="edit" size="18"></i>
+                            </button>
                             <button onclick="archivarTarea('${tarea.id}')" 
                                     class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
                                     title="Archivar tarea">
@@ -600,6 +610,11 @@ function crearHTMLTarea(tarea) {
                 
                 <div class="flex items-start gap-2">
                     ${esAdministrador ? `
+                    <button onclick="editarTarea('${tarea.id}')" 
+                            class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                            title="Editar tarea">
+                        <i data-lucide="edit" size="18"></i>
+                    </button>
                     <button onclick="archivarTarea('${tarea.id}')" 
                             class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
                             title="Archivar tarea">
