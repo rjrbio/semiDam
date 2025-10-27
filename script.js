@@ -17,10 +17,6 @@ let appInicializada = false;
 // Estado de tareas expandidas (para tareas entregadas)
 let tareasExpandidas = new Set();
 
-// Estado de edición
-let modoEdicion = false;
-let tareaEditando = null;
-
 // ========================================
 // 2. FUNCIONES DE UTILIDAD
 // ========================================
@@ -239,51 +235,6 @@ async function eliminarTarea(id) {
 }
 
 /**
- * Actualiza una tarea existente
- * @param {string} id - ID de la tarea a actualizar
- * @param {Object} nuevoDatos - Nuevos datos de la tarea
- */
-async function actualizarTarea(id, nuevoDatos) {
-    try {
-        // Encontrar la tarea en el array local
-        const indice = tareas.findIndex(t => t.id === id);
-        if (indice === -1) {
-            throw new Error('Tarea no encontrada');
-        }
-        
-        // Preservar datos importantes de la tarea original
-        const tareaOriginal = tareas[indice];
-        const tareaActualizada = {
-            ...tareaOriginal,
-            ...nuevoDatos,
-            // Preservar progreso de usuarios y fecha de creación
-            progresoUsuarios: tareaOriginal.progresoUsuarios || {},
-            fechaCreacion: tareaOriginal.fechaCreacion || new Date().toISOString()
-        };
-        
-        // Actualizar en Firebase si está conectado
-        if (isFirebaseConnected && !id.startsWith('temp_')) {
-            await actualizarTareaFirebase(id, tareaActualizada);
-        }
-        
-        // Actualizar en el array local
-        tareas[indice] = tareaActualizada;
-        
-        // Guardar respaldo local
-        guardarTareasLocal();
-        
-        // Re-renderizar tareas
-        renderizarTareas();
-        
-        console.log(`✅ Tarea actualizada: ${tareaActualizada.titulo}`);
-        
-    } catch (error) {
-        console.error('❌ Error actualizando tarea:', error);
-        throw error;
-    }
-}
-
-/**
  * Cambia el estado de completada de una tarea
  * @param {string} id - ID de la tarea
  */
@@ -466,14 +417,6 @@ function crearHTMLTarea(tarea) {
                             <i data-lucide="chevron-down" size="18"></i>
                         </button>
                         
-                        ${esAdministrador ? `
-                        <button onclick="editarTarea('${tarea.id}')" 
-                                class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0 ml-2"
-                                title="Editar tarea (solo administradores)">
-                            <i data-lucide="edit" size="18"></i>
-                        </button>
-                        ` : ''}
-                        
                         ${botonEliminar}
                     </div>
                 </div>
@@ -525,14 +468,6 @@ function crearHTMLTarea(tarea) {
                                 <i data-lucide="chevron-up" size="18"></i>
                             </button>
                             
-                            ${esAdministrador ? `
-                            <button onclick="editarTarea('${tarea.id}')" 
-                                    class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
-                                    title="Editar tarea (solo administradores)">
-                                <i data-lucide="edit" size="18"></i>
-                            </button>
-                            ` : ''}
-                            
                             ${botonEliminar}
                         </div>
                     </div>
@@ -579,17 +514,7 @@ function crearHTMLTarea(tarea) {
                     </div>
                 </div>
                 
-                <div class="flex items-start gap-2">
-                    ${esAdministrador ? `
-                    <button onclick="editarTarea('${tarea.id}')" 
-                            class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
-                            title="Editar tarea (solo administradores)">
-                        <i data-lucide="edit" size="18"></i>
-                    </button>
-                    ` : ''}
-                    
-                    ${botonEliminar}
-                </div>
+                ${botonEliminar}
             </div>
         </div>
     `;
@@ -673,10 +598,7 @@ async function inicializarApp() {
  */
 function configurarEventListeners() {
     // Event listener para el botón de nueva tarea
-    document.getElementById('btn-nueva-tarea').addEventListener('click', function() {
-        cancelarEdicion(); // Cancelar cualquier edición en curso
-        toggleFormulario();
-    });
+    document.getElementById('btn-nueva-tarea').addEventListener('click', toggleFormulario);
     
     // Event listener para el botón de sincronización
     document.getElementById('btn-sincronizar').addEventListener('click', async function() {
@@ -687,10 +609,7 @@ function configurarEventListeners() {
     });
     
     // Event listener para el botón de cancelar
-    document.getElementById('btn-cancelar').addEventListener('click', function() {
-        cancelarEdicion();
-        toggleFormulario();
-    });
+    document.getElementById('btn-cancelar').addEventListener('click', toggleFormulario);
     
     // Event listener para el formulario
     document.getElementById('form-tarea').addEventListener('submit', async function(e) {
@@ -713,27 +632,11 @@ function configurarEventListeners() {
             return;
         }
         
-        try {
-            if (modoEdicion && tareaEditando) {
-                // Actualizar tarea existente
-                await actualizarTarea(tareaEditando.id, datosFormulario);
-                mostrarMensaje('✅ Tarea actualizada correctamente', 'exito');
-            } else {
-                // Crear nueva tarea
-                await agregarTarea(datosFormulario);
-                mostrarMensaje('✅ Tarea agregada correctamente', 'exito');
-            }
-            
-            // Limpiar modo edición
-            cancelarEdicion();
-            
-            // Ocultar formulario
-            toggleFormulario();
-            
-        } catch (error) {
-            console.error('❌ Error al procesar tarea:', error);
-            mostrarMensaje('❌ Error al procesar la tarea', 'error');
-        }
+        // Añadir tarea
+        await agregarTarea(datosFormulario);
+        
+        // Ocultar formulario
+        toggleFormulario();
     });
     
     // Event listeners para los filtros
@@ -786,78 +689,6 @@ function expandirTarea(id) {
     
     // Re-renderizar solo para actualizar la vista
     renderizarTareas();
-}
-
-/**
- * Activa el modo edición para una tarea específica
- * @param {string} id - ID de la tarea a editar
- */
-function editarTarea(id) {
-    if (!esAdministrador) {
-        mostrarMensaje('❌ Solo los administradores pueden editar tareas', 'error');
-        return;
-    }
-    
-    const tarea = tareas.find(t => t.id === id);
-    if (!tarea) {
-        mostrarMensaje('❌ Tarea no encontrada', 'error');
-        return;
-    }
-    
-    // Activar modo edición
-    modoEdicion = true;
-    tareaEditando = tarea;
-    
-    // Mostrar formulario
-    const formulario = document.getElementById('formulario-tarea');
-    const titulo = document.querySelector('#formulario-tarea h2');
-    const botonSubmit = document.querySelector('#form-tarea button[type="submit"]');
-    
-    if (formulario && titulo && botonSubmit) {
-        formulario.classList.remove('hidden');
-        titulo.textContent = 'Editar Tarea o Examen';
-        botonSubmit.textContent = 'Actualizar';
-        
-        // Cargar datos en el formulario
-        cargarDatosEnFormulario(tarea);
-        
-        // Scroll hacia el formulario
-        formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        console.log(`📝 Editando tarea: ${tarea.titulo}`);
-    }
-}
-
-/**
- * Carga los datos de una tarea en el formulario para edición
- * @param {Object} tarea - Objeto tarea a cargar
- */
-function cargarDatosEnFormulario(tarea) {
-    document.getElementById('titulo').value = tarea.titulo || '';
-    document.getElementById('asignatura').value = tarea.asignatura || '';
-    document.getElementById('tipo').value = tarea.tipo || 'tarea';
-    document.getElementById('fecha').value = tarea.fecha || '';
-    document.getElementById('plataforma').value = tarea.plataforma || '';
-    document.getElementById('descripcion').value = tarea.descripcion || '';
-}
-
-/**
- * Cancela el modo edición y limpia el formulario
- */
-function cancelarEdicion() {
-    modoEdicion = false;
-    tareaEditando = null;
-    
-    const titulo = document.querySelector('#formulario-tarea h2');
-    const botonSubmit = document.querySelector('#form-tarea button[type="submit"]');
-    
-    if (titulo && botonSubmit) {
-        titulo.textContent = 'Añadir Tarea o Examen';
-        botonSubmit.textContent = 'Agregar';
-    }
-    
-    // Limpiar formulario
-    document.getElementById('form-tarea').reset();
 }
 
 /**
@@ -920,4 +751,3 @@ window.eliminarTarea = eliminarTarea;
 window.exportarTareas = exportarTareas;
 window.obtenerEstadisticas = obtenerEstadisticas;
 window.expandirTarea = expandirTarea;
-window.editarTarea = editarTarea;
