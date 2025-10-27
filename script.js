@@ -14,6 +14,10 @@ let filtroActual = 'Todas';
 // Vista actual (lista o calendario)
 let vistaActual = 'lista';
 
+// Mes y año actual del calendario
+let mesCalendario = new Date().getMonth();
+let añoCalendario = new Date().getFullYear();
+
 // Estado de inicialización
 let appInicializada = false;
 
@@ -280,6 +284,8 @@ async function archivarTarea(id) {
  */
 async function toggleCompletada(id) {
     try {
+        const usuarioActual = window.getUsuarioActual ? window.getUsuarioActual() : null;
+        
         if (!usuarioActual) {
             mostrarMensaje('❌ Debes iniciar sesión para marcar tareas', 'error');
             return;
@@ -405,6 +411,10 @@ function mostrarMensaje(texto, tipo = 'info') {
  * @returns {string} - HTML de la tarea
  */
 function crearHTMLTarea(tarea) {
+    // Obtener el usuario actual desde el sistema de usuarios
+    const usuarioActual = window.getUsuarioActual ? window.getUsuarioActual() : null;
+    const esAdministrador = window.getEsAdministrador ? window.getEsAdministrador() : false;
+    
     if (!usuarioActual) return '';
     
     const fechaFormateada = formatearFecha(tarea.fecha);
@@ -659,8 +669,7 @@ function cambiarVista(vista) {
 function renderizarCalendario() {
     const calendarioContainer = document.getElementById('vista-calendario');
     const hoy = new Date();
-    const mesActual = hoy.getMonth();
-    const añoActual = hoy.getFullYear();
+    const usuarioActual = window.getUsuarioActual ? window.getUsuarioActual() : null;
     
     // Obtener tareas no archivadas
     const tareasNoArchivadas = tareas.filter(t => !t.archivada);
@@ -676,8 +685,8 @@ function renderizarCalendario() {
     });
     
     // Generar calendario
-    const primerDia = new Date(añoActual, mesActual, 1);
-    const ultimoDia = new Date(añoActual, mesActual + 1, 0);
+    const primerDia = new Date(añoCalendario, mesCalendario, 1);
+    const ultimoDia = new Date(añoCalendario, mesCalendario + 1, 0);
     const diasMes = ultimoDia.getDate();
     const diaSemanaInicio = primerDia.getDay();
     
@@ -687,10 +696,20 @@ function renderizarCalendario() {
     
     let htmlCalendario = `
         <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-            <div class="mb-4">
+            <div class="mb-4 flex items-center justify-between">
+                <button onclick="cambiarMesCalendario(-1)" class="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors flex items-center gap-1">
+                    <i data-lucide="chevron-left" size="20"></i>
+                    <span class="hidden sm:inline">Anterior</span>
+                </button>
+                
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-800 text-center">
-                    ${meses[mesActual]} ${añoActual}
+                    ${meses[mesCalendario]} ${añoCalendario}
                 </h2>
+                
+                <button onclick="cambiarMesCalendario(1)" class="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors flex items-center gap-1">
+                    <span class="hidden sm:inline">Siguiente</span>
+                    <i data-lucide="chevron-right" size="20"></i>
+                </button>
             </div>
             
             <div class="grid grid-cols-7 gap-2">
@@ -706,9 +725,9 @@ function renderizarCalendario() {
                 
                 ${Array.from({length: diasMes}, (_, i) => {
                     const dia = i + 1;
-                    const fechaStr = `${añoActual}-${String(mesActual + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+                    const fechaStr = `${añoCalendario}-${String(mesCalendario + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
                     const tareasDelDia = tareasPorFecha[fechaStr] || [];
-                    const esHoy = dia === hoy.getDate();
+                    const esHoy = dia === hoy.getDate() && mesCalendario === hoy.getMonth() && añoCalendario === hoy.getFullYear();
                     
                     return `
                         <div class="p-2 sm:p-3 border rounded-lg ${esHoy ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200'} hover:shadow-md transition-all min-h-[60px] sm:min-h-[80px]">
@@ -718,7 +737,7 @@ function renderizarCalendario() {
                             <div class="mt-1 space-y-1">
                                 ${tareasDelDia.slice(0, 3).map(tarea => {
                                     const tipoColor = tarea.tipo === 'examen' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
-                                    const miProgreso = obtenerProgresoUsuario(tarea, usuarioActual);
+                                    const miProgreso = usuarioActual ? obtenerProgresoUsuario(tarea, usuarioActual) : false;
                                     return `
                                         <div class="text-xs px-1 py-0.5 rounded ${tipoColor} truncate ${miProgreso ? 'opacity-50' : ''}" title="${tarea.titulo}">
                                             ${miProgreso ? '✓ ' : ''}${tarea.titulo}
@@ -759,6 +778,25 @@ function renderizarCalendario() {
     if (typeof lucide !== 'undefined') {
         lucide.createIcons();
     }
+}
+
+/**
+ * Cambia el mes mostrado en el calendario
+ * @param {number} direccion - -1 para mes anterior, 1 para mes siguiente
+ */
+function cambiarMesCalendario(direccion) {
+    mesCalendario += direccion;
+    
+    // Ajustar año si es necesario
+    if (mesCalendario < 0) {
+        mesCalendario = 11;
+        añoCalendario--;
+    } else if (mesCalendario > 11) {
+        mesCalendario = 0;
+        añoCalendario++;
+    }
+    
+    renderizarCalendario();
 }
 
 /**
@@ -1010,3 +1048,4 @@ window.obtenerEstadisticas = obtenerEstadisticas;
 window.expandirTarea = expandirTarea;
 window.archivarTarea = archivarTarea;
 window.cambiarVista = cambiarVista;
+window.cambiarMesCalendario = cambiarMesCalendario;
