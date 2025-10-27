@@ -512,7 +512,3 @@ window.cerrarSesion = cerrarSesion;
 // Hacer variables globales accesibles
 window.getUsuarioActual = () => usuarioActual;
 window.getEsAdministrador = () => esAdministrador;
-
-// Hacer funciones disponibles globalmente
-window.iniciarSesion = iniciarSesion;
-window.cerrarSesion = cerrarSesion;

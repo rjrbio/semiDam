@@ -415,7 +415,17 @@ function crearHTMLTarea(tarea) {
     const usuarioActual = window.getUsuarioActual ? window.getUsuarioActual() : null;
     const esAdministrador = window.getEsAdministrador ? window.getEsAdministrador() : false;
     
-    if (!usuarioActual) return '';
+    console.log('🔧 crearHTMLTarea:', {
+        titulo: tarea.titulo,
+        usuarioActual: usuarioActual,
+        getUsuarioActual: typeof window.getUsuarioActual,
+        getEsAdministrador: typeof window.getEsAdministrador
+    });
+    
+    if (!usuarioActual) {
+        console.warn('⚠️ No hay usuario actual, no se puede renderizar tarea:', tarea.titulo);
+        return '';
+    }
     
     const fechaFormateada = formatearFecha(tarea.fecha);
     const tipoClase = tarea.tipo === 'examen' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
@@ -616,6 +626,13 @@ function renderizarTareas() {
     const contenedorTareas = document.getElementById('lista-tareas');
     const tareasFiltradas = obtenerTareasFiltradas();
     
+    console.log('🔍 Renderizando tareas:', {
+        totalTareas: tareas.length,
+        tareasFiltradas: tareasFiltradas.length,
+        filtroActual: filtroActual,
+        vistaActual: vistaActual
+    });
+    
     if (tareasFiltradas.length === 0) {
         const mensajeVacio = filtroActual === 'Archivadas' ? 
             'No hay tareas archivadas' : 
@@ -627,7 +644,9 @@ function renderizarTareas() {
             </div>
         `;
     } else {
-        contenedorTareas.innerHTML = tareasFiltradas.map(crearHTMLTarea).join('');
+        const htmlTareas = tareasFiltradas.map(crearHTMLTarea).filter(html => html !== '').join('');
+        console.log('📝 HTML generado, longitud:', htmlTareas.length);
+        contenedorTareas.innerHTML = htmlTareas;
     }
     
     // Reinicializar iconos después de añadir nuevo contenido
@@ -797,38 +816,6 @@ function cambiarMesCalendario(direccion) {
     }
     
     renderizarCalendario();
-}
-
-/**
- * Renderiza todas las tareas en el DOM (versión antigua - mantenida por compatibilidad)
- */
-function renderizarTareas() {
-    const contenedorTareas = document.getElementById('lista-tareas');
-    const tareasFiltradas = obtenerTareasFiltradas();
-}
-
-/**
- * Renderiza todas las tareas en el DOM (versión antigua - mantenida por compatibilidad)
- */
-function renderizarTareasLegacy() {
-    const contenedorTareas = document.getElementById('lista-tareas');
-    const tareasFiltradas = obtenerTareasFiltradas();
-
-    if (tareasFiltradas.length === 0) {
-        contenedorTareas.innerHTML = `
-            <div class="bg-white rounded-xl shadow-lg p-6 sm:p-12 text-center">
-                <p class="text-gray-500 text-base sm:text-lg">No hay tareas pendientes</p>
-                <p class="text-gray-400 mt-2 text-sm sm:text-base">¡Añade tu primera tarea para empezar!</p>
-            </div>
-        `;
-    } else {
-        contenedorTareas.innerHTML = tareasFiltradas.map(crearHTMLTarea).join('');
-    }
-    
-    // Reinicializar iconos después de añadir nuevo contenido
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
 }
 
 // ========================================
