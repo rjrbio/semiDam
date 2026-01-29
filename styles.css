@@ -1,21 +1,615 @@
 /* Estilos personalizados para el Gestor de Tareas DAM */
+/* Reemplazo completo de Tailwind CSS */
 
-/* Animaciones suaves */
+/* ==================== RESET Y BASE ==================== */
 * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     transition: all 0.2s ease-in-out;
 }
 
-/* Mejoras en los botones */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.5;
+    color: #1f2937;
+}
+
+/* ==================== TEMA VISUAL ==================== */
+:root {
+    --surface: rgba(255, 255, 255, 0.92);
+    --surface-strong: #ffffff;
+    --border-soft: rgba(148, 163, 184, 0.25);
+    --shadow-soft: 0 18px 45px -30px rgba(15, 23, 42, 0.55);
+    --shadow-strong: 0 20px 40px -20px rgba(15, 23, 42, 0.35);
+    --text-strong: #0f172a;
+    --text-muted: #475569;
+    --accent: #4f46e5;
+    --accent-strong: #4338ca;
+    --success: #16a34a;
+}
+
+.app-shell {
+    background:
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.12), transparent 45%),
+        radial-gradient(circle at 90% 10%, rgba(56, 189, 248, 0.12), transparent 50%),
+        linear-gradient(135deg, #eef2ff 0%, #f8fafc 45%, #eef2ff 100%);
+    color: var(--text-strong);
+}
+
+.app-container {
+    padding: 1.25rem 0.75rem 2rem;
+}
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(8px);
+    padding: 1.25rem;
+}
+
+.app-header {
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.app-header > * {
+    position: relative;
+    z-index: 1;
+}
+
+.app-header::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 20%, rgba(99, 102, 241, 0.18), transparent 55%);
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.brand-title {
+    font-size: clamp(1.35rem, 2vw, 2.15rem);
+    font-weight: 700;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+}
+
+.brand-subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-strong);
+    margin-bottom: 1rem;
+}
+
+.toolbar {
+    margin-bottom: 1.5rem;
+}
+
+.toolbar-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.toolbar-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.divider {
+    height: 1px;
+    width: 100%;
+    background: rgba(148, 163, 184, 0.3);
+}
+
+.task-list {
+    margin-top: 0.5rem;
+}
+
+.calendar-view {
+    margin-top: 0.5rem;
+}
+
+.calendar-view .grid > div {
+    border-radius: 12px;
+}
+
+/* ==================== BOTONES ==================== */
+.btn {
+    border-radius: 12px;
+    padding: 0.65rem 1.2rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-icon {
+    gap: 0.5rem;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #4f46e5, #6366f1);
+    color: #ffffff;
+    box-shadow: 0 12px 24px -18px rgba(79, 70, 229, 0.8);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #4338ca, #4f46e5);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #ffffff;
+    box-shadow: 0 12px 24px -18px rgba(22, 163, 74, 0.75);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #15803d, #16a34a);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #1f2937;
+    border-color: rgba(148, 163, 184, 0.35);
+}
+
+.btn-secondary:hover {
+    background: #cbd5f5;
+}
+
+/* Botones de filtros y vistas */
+.filtro-btn,
+.vista-btn {
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow: 0 8px 20px -18px rgba(15, 23, 42, 0.4);
+}
+
+.filtro-btn:hover,
+.vista-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* ==================== FORMULARIO ==================== */
+.form-card {
+    margin-bottom: 1.5rem;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: var(--text-strong);
+    font-size: 0.85rem;
+}
+
+.input {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: var(--surface-strong);
+    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+    font-size: 0.95rem;
+}
+
+.input:focus {
+    outline: none;
+    border-color: rgba(79, 70, 229, 0.6);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* ==================== LAYOUT ==================== */
+.min-h-screen { min-height: 100vh; }
+.max-w-6xl { max-width: 72rem; }
+.mx-auto { margin-left: auto; margin-right: auto; }
+
+/* ==================== PADDING ==================== */
+.p-2 { padding: 0.5rem; }
+.p-3 { padding: 0.75rem; }
+.p-4 { padding: 1rem; }
+.p-6 { padding: 1.5rem; }
+
+.px-1 { padding-left: 0.25rem; padding-right: 0.25rem; }
+.px-2 { padding-left: 0.5rem; padding-right: 0.5rem; }
+.px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+.px-4 { padding-left: 1rem; padding-right: 1rem; }
+.px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+
+.py-0\.5 { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+.py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+.py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+
+/* ==================== MARGIN ==================== */
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-6 { margin-bottom: 1.5rem; }
+
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-6 { margin-top: 1.5rem; }
+
+.ml-2 { margin-left: 0.5rem; }
+.ml-4 { margin-left: 1rem; }
+
+/* ==================== GAP ==================== */
+.gap-1 { gap: 0.25rem; }
+.gap-2 { gap: 0.5rem; }
+.gap-3 { gap: 0.75rem; }
+.gap-4 { gap: 1rem; }
+
+/* ==================== COLORES DE FONDO ==================== */
+.bg-white { background-color: #ffffff; }
+.bg-gradient-to-br { background-image: linear-gradient(to bottom right, #eff6ff, #e0e7ff); }
+
+.bg-indigo-50 { background-color: #eef2ff; }
+.bg-indigo-100 { background-color: #e0e7ff; }
+.bg-indigo-600 { background-color: #4f46e5; }
+
+.bg-green-50 { background-color: #f0fdf4; }
+.bg-green-100 { background-color: #dcfce7; }
+.bg-green-500 { background-color: #22c55e; }
+.bg-green-600 { background-color: #16a34a; }
+
+.bg-blue-100 { background-color: #dbeafe; }
+.bg-blue-500 { background-color: #3b82f6; }
+
+.bg-red-100 { background-color: #fee2e2; }
+.bg-red-500 { background-color: #ef4444; }
+
+.bg-amber-500 { background-color: #f59e0b; }
+
+.bg-gray-100 { background-color: #f3f4f6; }
+.bg-gray-200 { background-color: #e5e7eb; }
+
+/* ==================== HOVER BACKGROUNDS ==================== */
+.hover\:bg-indigo-200:hover { background-color: #c7d2fe; }
+.hover\:bg-indigo-700:hover { background-color: #4338ca; }
+.hover\:bg-green-700:hover { background-color: #15803d; }
+.hover\:bg-gray-200:hover { background-color: #e5e7eb; }
+.hover\:bg-gray-300:hover { background-color: #d1d5db; }
+
+/* ==================== COLORES DE TEXTO ==================== */
+.text-white { color: #ffffff; }
+.text-gray-400 { color: #9ca3af; }
+.text-gray-500 { color: #6b7280; }
+.text-gray-600 { color: #4b5563; }
+.text-gray-700 { color: #374151; }
+.text-gray-800 { color: #1f2937; }
+
+.text-indigo-600 { color: #4f46e5; }
+.text-indigo-700 { color: #4338ca; }
+
+.text-green-600 { color: #16a34a; }
+.text-green-700 { color: #15803d; }
+.text-green-800 { color: #166534; }
+
+.text-blue-500 { color: #3b82f6; }
+.text-blue-700 { color: #1d4ed8; }
+
+.text-red-500 { color: #ef4444; }
+.text-red-700 { color: #b91c1c; }
+
+.text-amber-500 { color: #f59e0b; }
+.text-amber-700 { color: #b45309; }
+
+/* ==================== HOVER TEXT COLORS ==================== */
+.hover\:text-indigo-600:hover { color: #4f46e5; }
+.hover\:text-indigo-700:hover { color: #4338ca; }
+.hover\:text-green-700:hover { color: #15803d; }
+.hover\:text-blue-700:hover { color: #1d4ed8; }
+.hover\:text-red-700:hover { color: #b91c1c; }
+.hover\:text-amber-700:hover { color: #b45309; }
+.hover\:text-gray-600:hover { color: #4b5563; }
+
+/* ==================== TAMAÑOS DE TEXTO ==================== */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+
+/* ==================== PESO DE FUENTE ==================== */
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* ==================== BORDES ==================== */
+.rounded { border-radius: 0.25rem; }
+.rounded-lg { border-radius: 0.5rem; }
+.rounded-xl { border-radius: 0.75rem; }
+.rounded-full { border-radius: 9999px; }
+
+.border { border-width: 1px; }
+.border-t { border-top-width: 1px; }
+.border-l-4 { border-left-width: 4px; }
+
+.border-gray-200 { border-color: #e5e7eb; }
+.border-gray-300 { border-color: #d1d5db; }
+.border-indigo-300 { border-color: #a5b4fc; }
+.border-blue-300 { border-color: #93c5fd; }
+.border-red-300 { border-color: #fca5a5; }
+.border-green-400 { border-color: #4ade80; }
+
+/* ==================== SOMBRAS ==================== */
+.shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+.shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+
+.hover\:shadow-md:hover { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
+.hover\:shadow-lg:hover { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+.hover\:shadow-xl:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+
+/* ==================== FLEXBOX ==================== */
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-row { flex-direction: row; }
+.flex-wrap { flex-wrap: wrap; }
+
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.justify-end { justify-content: flex-end; }
+.justify-start { justify-content: flex-start; }
+
+.flex-1 { flex: 1 1 0%; }
+.flex-shrink-0 { flex-shrink: 0; }
+
+/* ==================== GRID ==================== */
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+.grid-cols-7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+
+/* ==================== ESPACIADO ==================== */
+.space-y-1 > * + * { margin-top: 0.25rem; }
+.space-y-4 > * + * { margin-top: 1rem; }
+
+/* ==================== DISPLAY ==================== */
+.block { display: block; }
+.hidden { display: none; }
+.inline { display: inline; }
+
+/* ==================== ANCHO Y ALTO ==================== */
+.w-4 { width: 1rem; }
+.w-full { width: 100%; }
+.h-4 { height: 1rem; }
+
+.min-w-0 { min-width: 0px; }
+.min-h-\[60px\] { min-height: 60px; }
+.min-h-\[80px\] { min-height: 80px; }
+
+/* ==================== INPUTS Y SELECTS ==================== */
+input, select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+input[type="text"],
+input[type="date"],
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+}
+
+.focus\:ring-2:focus {
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.5);
+}
+
+.focus\:ring-indigo-500:focus {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5);
+}
+
+.focus\:border-transparent:focus {
+    border-color: transparent;
+}
+
+/* ==================== LABELS ==================== */
+label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.25rem;
+}
+
+/* ==================== BOTONES ==================== */
+button {
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
 button:focus {
     outline: 2px solid #4f46e5;
     outline-offset: 2px;
 }
 
-/* Animación para las tareas */
-.space-y-4 > div {
-    animation: slideIn 0.3s ease-out;
+.transition-colors {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
 }
 
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* ==================== RING ==================== */
+.ring-2 {
+    box-shadow: 0 0 0 2px currentColor;
+}
+
+.ring-indigo-400 {
+    --tw-ring-color: #818cf8;
+}
+
+.ring-2.ring-indigo-400 {
+    box-shadow: 0 0 0 2px #818cf8;
+}
+
+/* ==================== ALINEACIÓN DE TEXTO ==================== */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+
+/* ==================== UTILIDADES DE TEXTO ==================== */
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.break-words {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.italic { font-style: italic; }
+
+/* ==================== OPACIDAD ==================== */
+.opacity-50 { opacity: 0.5; }
+.opacity-70 { opacity: 0.7; }
+
+/* ==================== POSICIONAMIENTO ==================== */
+.fixed { position: fixed; }
+.relative { position: relative; }
+.absolute { position: absolute; }
+
+.top-4 { top: 1rem; }
+.right-4 { right: 1rem; }
+
+/* ==================== Z-INDEX ==================== */
+.z-50 { z-index: 50; }
+
+/* ==================== RESPONSIVE - SM (640px+) ==================== */
+@media (min-width: 640px) {
+    .app-container {
+        padding: 1.75rem 1.25rem 2.5rem;
+    }
+
+    .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .form-actions {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .sm\:p-3 { padding: 0.75rem; }
+    .sm\:p-4 { padding: 1rem; }
+    .sm\:p-6 { padding: 1.5rem; }
+    .sm\:p-12 { padding: 3rem; }
+    
+    .sm\:px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .sm\:py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+    .sm\:py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    
+    .sm\:mb-6 { margin-bottom: 1.5rem; }
+    
+    .sm\:gap-2 { gap: 0.5rem; }
+    .sm\:gap-3 { gap: 0.75rem; }
+    
+    .sm\:text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+    .sm\:text-base { font-size: 1rem; line-height: 1.5rem; }
+    .sm\:text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+    .sm\:text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+    .sm\:text-2xl { font-size: 1.5rem; line-height: 2rem; }
+    .sm\:text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+    
+    .sm\:flex-row { flex-direction: row; }
+    .sm\:items-center { align-items: center; }
+    .sm\:justify-between { justify-content: space-between; }
+    .sm\:justify-end { justify-content: flex-end; }
+    
+    .sm\:text-left { text-align: left; }
+    
+    .sm\:inline { display: inline; }
+    .sm\:hidden { display: none; }
+    
+    .sm\:col-span-2 { grid-column: span 2 / span 2; }
+    .sm\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    
+    .sm\:flex-none { flex: none; }
+    
+    .sm\:min-h-\[80px\] { min-height: 80px; }
+}
+
+/* ==================== RESPONSIVE - MD (768px+) ==================== */
+@media (min-width: 768px) {
+    .md\:col-span-1 { grid-column: span 1 / span 1; }
+}
+
+/* ==================== RESPONSIVE - XS (480px+) ==================== */
+@media (min-width: 480px) {
+    .xs\:inline { display: inline; }
+    .xs\:hidden { display: none; }
+}
+
+/* ==================== ANIMACIONES ==================== */
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -27,9 +621,8 @@ button:focus {
     }
 }
 
-/* Estilos para mensajes de notificación */
-.mensaje-notificacion {
-    animation: fadeInRight 0.3s ease-out;
+.space-y-4 > div {
+    animation: slideIn 0.3s ease-out;
 }
 
 @keyframes fadeInRight {
@@ -43,74 +636,13 @@ button:focus {
     }
 }
 
-/* Mejoras en el formulario */
-.form-field:focus-within {
-    transform: scale(1.01);
-}
-
-/* Mejoras responsive para móvil */
-@media (max-width: 640px) {
-    /* Espaciado más compacto en móvil */
-    .space-y-4 > * + * {
-        margin-top: 0.75rem;
-    }
-    
-    /* Títulos más pequeños en móvil */
-    h1 {
-        font-size: 1.5rem !important;
-    }
-    
-    h2 {
-        font-size: 1.25rem !important;
-    }
-    
-    /* Botones más táctiles en móvil */
-    button {
-        min-height: 44px;
-        padding: 0.75rem 1rem;
-    }
-    
-    /* Filtros más compactos */
-    .filtro-btn {
-        font-size: 0.75rem;
-        padding: 0.5rem 0.75rem;
-    }
-    
-    /* Inputs más táctiles */
-    input, select {
-        min-height: 44px;
-        font-size: 16px; /* Previene zoom en iOS */
-    }
-}
-
-/* Punto de quiebre personalizado para pantallas muy pequeñas */
-@media (max-width: 480px) {
-    .xs\:hidden {
-        display: none !important;
-    }
-    
-    .xs\:inline {
-        display: inline !important;
-    }
-}
-
-/* Estilos para el sistema de usuarios */
-#modal-login {
-    backdrop-filter: blur(4px);
-    animation: fadeIn 0.3s ease-out;
+.mensaje-notificacion {
+    animation: fadeInRight 0.3s ease-out;
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-#modal-login .bg-white {
-    animation: scaleIn 0.3s ease-out;
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 @keyframes scaleIn {
@@ -124,48 +656,13 @@ button:focus {
     }
 }
 
-/* Indicadores de progreso colaborativo */
-.progreso-colaborativo {
-    transition: all 0.3s ease;
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
 }
 
-.progreso-colaborativo:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* Barra de progreso animada */
-.bg-indigo-600 {
-    transition: width 0.5s ease-in-out;
-}
-
-/* Badges de usuarios */
-.text-xs.px-2.py-1.rounded-full {
-    transition: all 0.2s ease;
-    cursor: default;
-}
-
-.text-xs.px-2.py-1.rounded-full:hover {
-    transform: scale(1.05);
-}
-
-/* Indicador de usuario actual con ring */
 .ring-2.ring-indigo-400 {
     animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.8;
-    }
-}
-
-/* Estilos para tareas completadas por el usuario */
-.bg-green-50.border-l-4.border-green-400 {
-    animation: completedGlow 0.5s ease-out;
 }
 
 @keyframes completedGlow {
@@ -183,81 +680,51 @@ button:focus {
     }
 }
 
-/* Responsive mejorado */
-@media (max-width: 768px) {
-    .max-w-6xl {
-        padding: 0 1rem;
-    }
-    
-    .grid-cols-1.md\\:grid-cols-2 {
-        grid-template-columns: 1fr;
-    }
-    
-    .flex.items-center.justify-between {
-        flex-direction: column;
-        gap: 1rem;
-        align-items: stretch;
-    }
-    
-    .flex.flex-wrap.gap-2 {
-        flex-direction: column;
-    }
-    
-    .filtro-btn {
-        text-align: center;
-    }
-    
-    /* Ajustes para el modal en móvil */
-    #modal-login .max-w-md {
-        max-width: 90vw;
-    }
-    
-    /* Ocultar algunos elementos en móvil para mejor UX */
-    #usuario-info .text-xs {
-        display: none;
-    }
+.bg-green-50.border-l-4.border-green-400 {
+    animation: completedGlow 0.5s ease-out;
 }
 
-/* Mejoras de accesibilidad */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-/* Tema oscuro (opcional) */
-@media (prefers-color-scheme: dark) {
-    /* Se puede implementar un tema oscuro aquí si se desea */
+.animate-spin {
+    animation: spin 1s linear infinite;
 }
 
-/* Estilos para impresión */
-@media print {
-    .bg-gradient-to-br {
-        background: white !important;
-    }
-    
-    button {
-        display: none !important;
-    }
-    
-    .shadow-lg {
-        box-shadow: none !important;
-        border: 1px solid #e5e7eb !important;
-    }
-    
-    #modal-login {
-        display: none !important;
-    }
+/* ==================== ESTILOS ESPECÍFICOS ==================== */
+.form-field:focus-within {
+    transform: scale(1.01);
 }
 
-/* Mejoras visuales adicionales */
-.hover\\:shadow-xl:hover {
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+#modal-login {
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s ease-out;
 }
 
-/* Indicador de carga (opcional) */
+#modal-login .bg-white {
+    animation: scaleIn 0.3s ease-out;
+}
+
+.progreso-colaborativo {
+    transition: all 0.3s ease;
+}
+
+.progreso-colaborativo:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.text-xs.px-2.py-1.rounded-full {
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.text-xs.px-2.py-1.rounded-full:hover {
+    transform: scale(1.05);
+}
+
 .loading {
     opacity: 0.7;
     pointer-events: none;
@@ -278,12 +745,111 @@ button:focus {
     transform: translate(-50%, -50%);
 }
 
-@keyframes spin {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
+.duration-300 {
+    transition-duration: 300ms;
 }
 
-/* Animación para el botón de sincronización */
-.animate-spin {
-    animation: spin 1s linear infinite;
+.transition-opacity {
+    transition-property: opacity;
+}
+
+/* ==================== RESPONSIVE MÓVIL ==================== */
+@media (max-width: 640px) {
+    .space-y-4 > * + * {
+        margin-top: 0.75rem;
+    }
+    
+    h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    h2 {
+        font-size: 1.25rem !important;
+    }
+    
+    button {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+    }
+    
+    .filtro-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+    }
+    
+    input, select {
+        min-height: 44px;
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    .xs\:hidden {
+        display: none !important;
+    }
+    
+    .xs\:inline {
+        display: inline !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .max-w-6xl {
+        padding: 0 1rem;
+    }
+    
+    .grid-cols-1.md\:grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+    
+    .flex.items-center.justify-between {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+    
+    .flex.flex-wrap.gap-2 {
+        flex-direction: column;
+    }
+    
+    .filtro-btn {
+        text-align: center;
+    }
+    
+    #modal-login .max-w-md {
+        max-width: 90vw;
+    }
+    
+    #usuario-info .text-xs {
+        display: none;
+    }
+}
+
+/* ==================== ACCESIBILIDAD ==================== */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==================== IMPRESIÓN ==================== */
+@media print {
+    .bg-gradient-to-br {
+        background: white !important;
+    }
+    
+    button {
+        display: none !important;
+    }
+    
+    .shadow-lg {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+    }
+    
+    #modal-login {
+        display: none !important;
+    }
 }

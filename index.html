@@ -5,19 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Tareas DAM</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- CDN de Tailwind CSS para estilos rápidos -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    screens: {
-                        'xs': '480px',
-                    }
-                }
-            }
-        }
-    </script>
     <!-- CDN de iconos (Lucide) -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     
@@ -25,25 +12,25 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-    <div class="max-w-6xl mx-auto p-2 sm:p-4">
+<body class="min-h-screen app-shell">
+    <div class="max-w-6xl mx-auto p-2 sm:p-4 app-container">
         <!-- Header -->
-        <header class="bg-white rounded-xl shadow-lg p-3 sm:p-6 mb-4 sm:mb-6">
+        <header class="card app-header">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div class="text-center sm:text-left">
-                    <h1 class="text-xl sm:text-3xl font-bold text-gray-800 flex items-center justify-center sm:justify-start gap-2">
+                <div class="brand text-center sm:text-left">
+                    <h1 class="brand-title flex items-center justify-center sm:justify-start gap-2">
                         <i data-lucide="book-open" class="text-indigo-600"></i>
                         <span class="hidden xs:inline">Gestor de Tareas DAM</span>
                         <span class="xs:hidden">Tareas DAM</span>
                     </h1>
-                    <p class="text-gray-600 mt-1 text-sm sm:text-base">Organiza tus tareas y exámenes</p>
+                    <p class="brand-subtitle">Organiza tus tareas y exámenes</p>
                 </div>
                 <div class="flex gap-2 sm:gap-3 justify-center sm:justify-end items-center">
-                    <button id="btn-sincronizar" class="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-sm sm:text-base" title="Sincronizar con la nube">
+                    <button id="btn-sincronizar" class="btn btn-success btn-icon" title="Sincronizar con la nube">
                         <i data-lucide="refresh-cw" size="18"></i>
                         <span class="hidden sm:inline">Sync</span>
                     </button>
-                    <button id="btn-nueva-tarea" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg flex items-center gap-1 sm:gap-2 transition-colors text-sm sm:text-base">
+                    <button id="btn-nueva-tarea" class="btn btn-primary btn-icon">
                         <i data-lucide="plus" size="18"></i>
                         <span class="hidden xs:inline">Nueva Tarea</span>
                         <span class="xs:hidden">Nueva</span>
@@ -53,20 +40,20 @@
         </header>
 
         <!-- Formulario (inicialmente oculto) -->
-        <div id="formulario-tarea" class="bg-white rounded-xl shadow-lg p-3 sm:p-6 mb-4 sm:mb-6 hidden">
-            <h2 class="text-lg sm:text-xl font-bold text-gray-800 mb-4">Añadir Tarea o Examen</h2>
-            <form id="form-tarea" class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                <div class="sm:col-span-2 md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+        <div id="formulario-tarea" class="card form-card hidden">
+            <h2 class="section-title">Añadir Tarea o Examen</h2>
+            <form id="form-tarea" class="form-grid">
+                <div class="form-field sm:col-span-2 md:col-span-1">
+                    <label class="form-label">Título</label>
                     <input type="text" id="titulo" name="titulo" required
-                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base"
+                           class="input"
                            placeholder="Ej: Práctica SQL">
                 </div>
 
-                <div class="sm:col-span-2 md:col-span-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Asignatura</label>
+                <div class="form-field sm:col-span-2 md:col-span-1">
+                    <label class="form-label">Asignatura</label>
                     <select id="asignatura" name="asignatura" required
-                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
+                            class="input">
                         <option value="Bases de datos">Bases de datos</option>
                         <option value="Digitalización">Digitalización</option>
                         <option value="Entornos de desarrollo">Entornos de desarrollo</option>
@@ -78,41 +65,41 @@
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
+                <div class="form-field">
+                    <label class="form-label">Tipo</label>
                     <select id="tipo" name="tipo" required
-                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
+                            class="input">
                         <option value="tarea">Tarea</option>
                         <option value="examen">Examen</option>
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de entrega</label>
+                <div class="form-field">
+                    <label class="form-label">Fecha de entrega</label>
                     <input type="date" id="fecha" name="fecha" required
-                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
+                           class="input">
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Plataforma</label>
+                <div class="form-field">
+                    <label class="form-label">Plataforma</label>
                     <select id="plataforma" name="plataforma" required
-                            class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base">
+                            class="input">
                         <option value="Junta de Andalucía">Junta de Andalucía</option>
                         <option value="Portada">Portada</option>
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>
+                <div class="form-field">
+                    <label class="form-label">Descripción (opcional)</label>
                     <input type="text" id="descripcion" name="descripcion"
-                           class="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm sm:text-base" placeholder="Detalles adicionales">
+                           class="input" placeholder="Detalles adicionales">
                 </div>
 
-                <div class="sm:col-span-2 flex flex-col sm:flex-row gap-2 sm:gap-3">
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-none">
+                <div class="form-actions sm:col-span-2">
+                    <button type="submit" class="btn btn-primary">
                         Agregar
                     </button>
-                    <button type="button" id="btn-cancelar" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-6 py-3 rounded-lg transition-colors text-sm sm:text-base flex-1 sm:flex-none">
+                    <button type="button" id="btn-cancelar" class="btn btn-secondary">
                         Cancelar
                     </button>
                 </div>
@@ -120,8 +107,8 @@
         </div>
 
         <!-- Filtros y Controles de Vista -->
-        <div class="bg-white rounded-xl shadow-lg p-3 sm:p-4 mb-4 sm:mb-6">
-            <div class="flex flex-col gap-3">
+        <div class="card toolbar">
+            <div class="toolbar-inner">
                 <!-- Filtros de asignaturas -->
                 <div id="filtros" class="flex flex-wrap gap-1 sm:gap-2">
                     <button data-filtro="Todas" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm">
@@ -161,11 +148,11 @@
                 </div>
                 
                 <!-- Separador -->
-                <div class="border-t border-gray-200"></div>
+                <div class="divider"></div>
                 
                 <!-- Controles de vista y archivados -->
                 <div class="flex flex-wrap gap-2 items-center justify-between">
-                    <div class="flex gap-2">
+                    <div class="toolbar-group">
                         <button id="btn-vista-lista" class="vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm flex items-center gap-1">
                             <i data-lucide="list" size="16"></i>
                             <span>Lista</span>
@@ -185,11 +172,11 @@
         </div>
 
         <!-- Contenedor de Tareas (Lista y Calendario) -->
-        <div id="lista-tareas" class="space-y-4">
+        <div id="lista-tareas" class="space-y-4 task-list">
             <!-- Las tareas se insertarán aquí dinámicamente -->
         </div>
         
-        <div id="vista-calendario" class="hidden">
+        <div id="vista-calendario" class="hidden calendar-view">
             <!-- El calendario se insertará aquí dinámicamente -->
         </div>
     </div>
