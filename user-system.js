@@ -14,7 +14,8 @@ const ADMINISTRADORES = [
     'Administrador',
     'Profesor',
     'Admin',
-    'Pepe'
+    'Pepe',
+    'Antonio'
     // Añade aquí más nombres de administradores si los hay
 ];
 
