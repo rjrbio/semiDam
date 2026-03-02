@@ -31,63 +31,6 @@ Sistema de gestión de tareas colaborativo diseñado para estudiantes y profesor
 - Modales interactivos para login y gestión
 - Indicadores de estado de conexión
 
-## 🚀 Instalación y Configuración
-
-### 1. Configuración de Firebase
-
-1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
-2. Habilita Firestore Database
-3. Configura las reglas de seguridad:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Permitir lectura y escritura de tareas
-    match /tareas/{document} {
-      allow read, write: if true;
-    }
-    
-    // Permitir lectura y escritura de usuarios
-    match /usuarios/{document} {
-      allow read, write: if true;
-    }
-  }
-}
-```
-
-4. Obtén la configuración del proyecto y actualiza `firebase-config.js`:
-
-```javascript
-const firebaseConfig = {
-    apiKey: "tu-api-key",
-    authDomain: "tu-proyecto.firebaseapp.com",
-    projectId: "tu-proyecto-id",
-    storageBucket: "tu-proyecto.appspot.com",
-    messagingSenderId: "123456789",
-    appId: "tu-app-id"
-};
-```
-
-### 2. Configuración de Usuarios Administradores
-
-Edita el archivo `user-system.js` y añade los nombres de usuario que tendrán permisos de administrador:
-
-```javascript
-const ADMINISTRADORES = [
-    'Profesor',
-    'Admin',
-    'Nombre del Profesor'
-    // Añade más nombres según necesites
-];
-```
-
-### 3. Despliegue
-
-1. Sube todos los archivos a tu servidor web
-2. Asegúrate de que Firebase esté correctamente configurado
-3. Abre `index.html` en el navegador
-
 ## 📁 Estructura del Proyecto
 
 ```
@@ -170,23 +113,6 @@ const PRIORIDADES = {
 };
 ```
 
-## 🚨 Solución de Problemas
-
-### Error de Conexión a Firebase
-1. Verifica que la configuración en `firebase-config.js` sea correcta
-2. Asegúrate de que las reglas de Firestore permitan lectura/escritura
-3. Comprueba la consola del navegador para errores específicos
-
-### Los Usuarios No Se Guardan
-1. Verifica que Firebase esté conectado correctamente
-2. Los usuarios se guardan automáticamente en Firebase y localStorage
-3. Si persiste el problema, comprueba las reglas de seguridad de Firestore
-
-### Las Tareas No Se Sincronizan
-1. Comprueba la conexión a Internet
-2. Verifica que otros usuarios vean los cambios
-3. En caso de problemas, los datos se guardan localmente
-
 ## 🤝 Contribuir
 
 1. Fork el proyecto
@@ -195,20 +121,6 @@ const PRIORIDADES = {
 4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
 5. Abre un Pull Request
 
-## 📝 Changelog
-
-### v2.0.0 (Actual)
-- ✅ Migración a Firebase para persistencia de datos
-- ✅ Sistema completo de usuarios con roles
-- ✅ Progreso colaborativo en tiempo real
-- ✅ Interfaz moderna con Tailwind CSS
-- ✅ Modo offline con localStorage de respaldo
-
-### v1.0.0 (Inicial)
-- ✅ Gestión básica de tareas
-- ✅ Sistema de usuarios simple
-- ✅ Almacenamiento en localStorage
-
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
@@ -216,9 +128,3 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más det
 ## 👨‍💻 Autor
 
 Desarrollado para el curso de DAM - Sistema de gestión colaborativa de tareas.
-
----
-
-**¡Listo para usar! 🎉**
-
-El sistema está completamente configurado con Firebase y listo para ser utilizado por estudiantes y profesores. Los usuarios y su progreso se almacenan de forma permanente en la nube, eliminando el riesgo de pérdida de datos.

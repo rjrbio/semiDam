@@ -27,6 +27,43 @@ let tareasExpandidas = new Set();
 // Estado del modo edición
 let modoEdicion = false;
 let tareaEditando = null;
+let temaActual = 'oscuro';
+
+function aplicarTema(tema) {
+    const root = document.documentElement;
+    const temaNormalizado = tema === 'claro' ? 'light' : 'dark';
+    temaActual = temaNormalizado === 'light' ? 'claro' : 'oscuro';
+
+    root.setAttribute('data-theme', temaNormalizado);
+    localStorage.setItem('tema-semidam', temaActual);
+    actualizarBotonTema();
+}
+
+function actualizarBotonTema() {
+    const botonTema = document.getElementById('btn-tema');
+    if (!botonTema) return;
+
+    if (temaActual === 'claro') {
+        botonTema.innerHTML = '<i data-lucide="moon" size="18"></i><span class="hidden sm:inline">Oscuro</span>';
+        botonTema.title = 'Cambiar a tema oscuro';
+    } else {
+        botonTema.innerHTML = '<i data-lucide="sun" size="18"></i><span class="hidden sm:inline">Claro</span>';
+        botonTema.title = 'Cambiar a tema claro';
+    }
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+function alternarTema() {
+    aplicarTema(temaActual === 'claro' ? 'oscuro' : 'claro');
+}
+
+function inicializarTema() {
+    const temaGuardado = localStorage.getItem('tema-semidam');
+    aplicarTema(temaGuardado || 'oscuro');
+}
 
 // ========================================
 // 2. FUNCIONES DE UTILIDAD
@@ -544,7 +581,7 @@ function crearHTMLTarea(tarea) {
     // Mostrar botón de eliminar solo para administradores
     const botonEliminar = esAdministrador ? `
         <button onclick="eliminarTarea('${tarea.id}')" 
-                class="text-red-500 hover:text-red-700 transition-colors ml-2 sm:ml-4 flex-shrink-0"
+                class="action-btn action-delete transition-colors ml-2 sm:ml-4 flex-shrink-0"
                 title="Eliminar tarea (solo administradores)">
             <i data-lucide="trash-2" size="18"></i>
         </button>
@@ -561,7 +598,7 @@ function crearHTMLTarea(tarea) {
                     <div class="flex items-center justify-between gap-2">
                         <div class="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                             <button onclick="toggleCompletada('${tarea.id}')" 
-                                    class="text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    class="action-btn action-success transition-colors flex-shrink-0"
                                     title="Marcar como pendiente">
                                 <i data-lucide="check-circle" size="20"></i>
                             </button>
@@ -582,19 +619,19 @@ function crearHTMLTarea(tarea) {
                         </div>
                         
                         <button onclick="expandirTarea('${tarea.id}')" 
-                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 ml-2"
+                                class="action-btn action-neutral transition-colors flex-shrink-0 ml-2"
                                 title="Ver detalles">
                             <i data-lucide="chevron-down" size="18"></i>
                         </button>
                         
                         ${esAdministrador ? `
                         <button onclick="editarTarea('${tarea.id}')" 
-                                class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0 ml-2"
+                                class="action-btn action-edit transition-colors flex-shrink-0 ml-2"
                                 title="Editar tarea">
                             <i data-lucide="edit" size="18"></i>
                         </button>
                         <button onclick="archivarTarea('${tarea.id}')" 
-                                class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0 ml-2"
+                                class="action-btn action-archive transition-colors flex-shrink-0 ml-2"
                                 title="Archivar tarea">
                             <i data-lucide="archive" size="18"></i>
                         </button>
@@ -611,7 +648,7 @@ function crearHTMLTarea(tarea) {
                     <div class="flex items-start justify-between gap-2">
                         <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
                             <button onclick="toggleCompletada('${tarea.id}')" 
-                                    class="mt-1 text-green-600 hover:text-green-700 transition-colors flex-shrink-0"
+                                    class="mt-1 action-btn action-success transition-colors flex-shrink-0"
                                     title="Marcar como pendiente">
                                 <i data-lucide="check-circle" size="20"></i>
                             </button>
@@ -646,19 +683,19 @@ function crearHTMLTarea(tarea) {
                         
                         <div class="flex items-start gap-2">
                             <button onclick="expandirTarea('${tarea.id}')" 
-                                    class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                    class="action-btn action-neutral transition-colors flex-shrink-0"
                                     title="Minimizar">
                                 <i data-lucide="chevron-up" size="18"></i>
                             </button>
                             
                             ${esAdministrador ? `
                             <button onclick="editarTarea('${tarea.id}')" 
-                                    class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                                    class="action-btn action-edit transition-colors flex-shrink-0"
                                     title="Editar tarea">
                                 <i data-lucide="edit" size="18"></i>
                             </button>
                             <button onclick="archivarTarea('${tarea.id}')" 
-                                    class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
+                                    class="action-btn action-archive transition-colors flex-shrink-0"
                                     title="Archivar tarea">
                                 <i data-lucide="archive" size="18"></i>
                             </button>
@@ -678,7 +715,7 @@ function crearHTMLTarea(tarea) {
             <div class="flex items-start justify-between gap-2">
                 <div class="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
                     <button onclick="toggleCompletada('${tarea.id}')" 
-                            class="mt-1 text-gray-400 hover:text-indigo-600 transition-colors flex-shrink-0"
+                            class="mt-1 action-btn action-pending transition-colors flex-shrink-0"
                             title="Marcar como entregada">
                         <i data-lucide="circle" size="20"></i>
                     </button>
@@ -713,12 +750,12 @@ function crearHTMLTarea(tarea) {
                 <div class="flex items-start gap-2">
                     ${esAdministrador ? `
                     <button onclick="editarTarea('${tarea.id}')" 
-                            class="text-blue-500 hover:text-blue-700 transition-colors flex-shrink-0"
+                            class="action-btn action-edit transition-colors flex-shrink-0"
                             title="Editar tarea">
                         <i data-lucide="edit" size="18"></i>
                     </button>
                     <button onclick="archivarTarea('${tarea.id}')" 
-                            class="text-amber-500 hover:text-amber-700 transition-colors flex-shrink-0"
+                            class="action-btn action-archive transition-colors flex-shrink-0"
                             title="Archivar tarea">
                         <i data-lucide="archive" size="18"></i>
                     </button>
@@ -830,8 +867,10 @@ function renderizarCalendario() {
                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     
+    const maxVisibleEventos = window.innerWidth >= 1024 ? 6 : window.innerWidth >= 768 ? 5 : 3;
+
     let htmlCalendario = `
-        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+        <div class="bg-white rounded-xl shadow-lg p-4 sm:p-6 calendar-panel">
             <div class="mb-4 flex items-center justify-between">
                 <button onclick="cambiarMesCalendario(-1)" class="px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-lg transition-colors flex items-center gap-1">
                     <i data-lucide="chevron-left" size="20"></i>
@@ -848,15 +887,15 @@ function renderizarCalendario() {
                 </button>
             </div>
             
-            <div class="grid grid-cols-7 gap-2">
+            <div class="grid grid-cols-7 gap-2 calendar-grid">
                 ${diasSemana.map(dia => `
-                    <div class="text-center font-semibold text-gray-600 text-xs sm:text-sm p-2">
+                    <div class="text-center font-semibold text-gray-600 text-xs sm:text-sm p-2 calendar-weekday">
                         ${dia}
                     </div>
                 `).join('')}
                 
                 ${Array.from({length: diaSemanaInicio}, () => `
-                    <div class="p-2 sm:p-4"></div>
+                    <div class="p-2 sm:p-4 calendar-empty-day"></div>
                 `).join('')}
                 
                 ${Array.from({length: diasMes}, (_, i) => {
@@ -866,23 +905,23 @@ function renderizarCalendario() {
                     const esHoy = dia === hoy.getDate() && mesCalendario === hoy.getMonth() && añoCalendario === hoy.getFullYear();
                     
                     return `
-                        <div class="p-2 sm:p-3 border rounded-lg ${esHoy ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200'} hover:shadow-md transition-all min-h-[60px] sm:min-h-[80px]">
-                            <div class="font-semibold text-sm sm:text-base ${esHoy ? 'text-indigo-600' : 'text-gray-700'}">
+                        <div class="p-2 sm:p-3 border rounded-lg calendar-day ${esHoy ? 'bg-indigo-50 border-indigo-300' : 'border-gray-200'} hover:shadow-md transition-all min-h-[60px] sm:min-h-[80px]">
+                            <div class="font-semibold text-sm sm:text-base calendar-day-number ${esHoy ? 'text-indigo-600' : 'text-gray-700'}">
                                 ${dia}
                             </div>
-                            <div class="mt-1 space-y-1">
-                                ${tareasDelDia.slice(0, 3).map(tarea => {
+                            <div class="mt-1 space-y-1 calendar-events">
+                                ${tareasDelDia.slice(0, maxVisibleEventos).map(tarea => {
                                     const tipoColor = tarea.tipo === 'examen' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700';
                                     const miProgreso = usuarioActual ? obtenerProgresoUsuario(tarea, usuarioActual) : false;
                                     return `
-                                        <div class="text-xs px-1 py-0.5 rounded ${tipoColor} truncate ${miProgreso ? 'opacity-50' : ''}" title="${tarea.titulo}">
+                                        <div class="text-xs px-1 py-0.5 rounded calendar-event-chip ${tipoColor} truncate ${miProgreso ? 'opacity-50' : ''}" title="${tarea.titulo}">
                                             ${miProgreso ? '✓ ' : ''}${tarea.titulo}
                                         </div>
                                     `;
                                 }).join('')}
-                                ${tareasDelDia.length > 3 ? `
-                                    <div class="text-xs text-gray-500 italic">
-                                        +${tareasDelDia.length - 3} más
+                                ${tareasDelDia.length > maxVisibleEventos ? `
+                                    <div class="text-xs text-gray-500 italic calendar-more-events">
+                                        +${tareasDelDia.length - maxVisibleEventos} más
                                     </div>
                                 ` : ''}
                             </div>
@@ -946,6 +985,8 @@ async function inicializarApp() {
     if (appInicializada) return;
     
     try {
+        inicializarTema();
+
         // Mostrar indicador de carga
         mostrarEstadoConexion('syncing');
         
@@ -988,6 +1029,8 @@ async function inicializarApp() {
  * Configura todos los event listeners
  */
 function configurarEventListeners() {
+    document.getElementById('btn-tema')?.addEventListener('click', alternarTema);
+
     // Event listener para el botón de nueva tarea
     document.getElementById('btn-nueva-tarea').addEventListener('click', toggleFormulario);
     

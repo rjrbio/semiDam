@@ -337,7 +337,7 @@ function mostrarInterfazUsuario() {
                 <span class="font-medium text-xs">${usuarioActual}</span>
                 <span class="text-xs px-1 py-0.5 bg-gray-100 rounded text-gray-600">${tipoUsuario}</span>
                 <button onclick="cerrarSesion()" 
-                        class="ml-1 text-gray-400 hover:text-red-500 transition-colors" 
+                        class="ml-1 action-btn action-logout" 
                         title="Cerrar sesión">
                     <i data-lucide="log-out" size="12"></i>
                 </button>
