@@ -3,9 +3,9 @@
 import { CURSOS } from './config.js';
 import {
     AMBOS, MIAS, estado, esAdmin, cursoElegido, cursosVisibles, misAsignaturas,
-    ordinalDe, siglaDe, estaHecha, tareasDelCurso, filtrarAsignatura,
+    ordinalDe, siglaDe, tonoDe, estaHecha, tareasDelCurso, filtrarAsignatura,
 } from './estado.js';
-import { SEMANA, aISO, hoyISO, sumarDias, domingoDe, partes, nombreMes, plazo } from './fechas.js';
+import { SEMANA, aISO, hoyISO, sumarDias, diasEntre, domingoDe, partes, nombreMes, plazo } from './fechas.js';
 import { icono } from './iconos.js';
 
 // Todo lo que escribe la gente pasa por aquí antes de llegar al HTML.
@@ -33,6 +33,16 @@ function contar(tareas) {
     if (entregas) trozos.push(`${entregas} ${entregas === 1 ? 'tarea' : 'tareas'}`);
     if (examenes) trozos.push(`${examenes} ${examenes === 1 ? 'examen' : 'exámenes'}`);
     return trozos.join(' y ');
+}
+
+/**
+ * Clases de urgencia de un día: rojo si es hoy o mañana, naranja si falta una semana o menos.
+ * Solo cuenta si queda algo por hacer; lo que ya pasó no se colorea.
+ */
+function urgencia(fecha, hoy, tareas) {
+    const dias = diasEntre(hoy, fecha);
+    if (dias < 0 || dias > 7 || tareas.every(estaHecha)) return '';
+    return dias <= 1 ? 'urge urge--ya' : 'urge urge--pronto';
 }
 
 /** Para completar frases: «en 1º», «en 1º y 2º», «en tus asignaturas» o «de Bases de datos». */
@@ -66,7 +76,7 @@ export function htmlAsignaturas() {
     const total = [...sinHacer.values()].reduce((suma, tareas) => suma + tareas.length, 0);
 
     const opcion = (valor, sigla, nombre, cuenta) => `
-        <label class="asignatura">
+        <label class="asignatura ${tonoDe(valor)}">
             <input type="radio" name="ver-asignatura" value="${escapar(valor)}" data-foco="asignatura:${escapar(valor)}"${(estado.asignatura ?? '') === valor ? ' checked' : ''}>
             ${sigla ? `<span class="asignatura-sigla">${escapar(sigla)}</span>` : ''}
             <span class="asignatura-nombre">${escapar(nombre)}</span>
@@ -102,7 +112,7 @@ export function htmlElegirAsignaturas() {
             ${curso.asignaturas.map((asignatura) => `
             <label class="elegir-opcion">
                 <input type="checkbox" name="asignatura" value="${escapar(asignatura.nombre)}"${marcada(curso, asignatura) ? ' checked' : ''}>
-                <span class="sigla">${escapar(asignatura.sigla)}</span>
+                <span class="sigla ${tonoDe(asignatura.nombre)}">${escapar(asignatura.sigla)}</span>
                 <span>${escapar(asignatura.nombre)}</span>
             </label>`).join('')}
         </div>`).join('');
@@ -150,7 +160,7 @@ function htmlEntrada(tarea) {
         <li class="${clases.join(' ')}">
             <div class="entrada-cuerpo">
                 <h3 class="entrada-titulo">
-                    ${tarea.asignatura ? `<abbr class="sigla" title="${escapar(tarea.asignatura)}">${escapar(siglaDe(tarea.asignatura))}</abbr>` : ''}
+                    ${tarea.asignatura ? `<abbr class="sigla ${tonoDe(tarea.asignatura)}" title="${escapar(tarea.asignatura)}">${escapar(siglaDe(tarea.asignatura))}</abbr>` : ''}
                     ${hecha
                         ? `<button type="button" class="entrada-plegar" data-accion="plegar" data-id="${id}" data-foco="plegar:${id}" aria-expanded="${!plegada}">${titulo}${icono('chevron-down', 16)}</button>`
                         : titulo}
@@ -174,7 +184,7 @@ function htmlEntrada(tarea) {
 }
 
 /** Tareas agrupadas por día: cada día lleva su hoja de fecha a la izquierda. */
-function htmlDias(tareas, hoy, conPlazo = true) {
+function htmlDias(tareas, hoy, { conPlazo = true, conUrgencia = true } = {}) {
     const dias = agrupar(tareas, (tarea) => tarea.fecha);
     return `
         <ol class="dias">${[...dias].map(([fecha, delDia]) => {
@@ -182,6 +192,7 @@ function htmlDias(tareas, hoy, conPlazo = true) {
             if (delDia.some((tarea) => tarea.tipo === 'examen')) clases.push('dia--examen');
             if (delDia.every(estaHecha)) clases.push('dia--hecho');
             if (fecha === hoy) clases.push('dia--hoy');
+            if (conUrgencia) clases.push(urgencia(fecha, hoy, delDia));
             return `
             <li class="${clases.join(' ')}">
                 <div class="dia-fecha">
@@ -201,7 +212,7 @@ function htmlDias(tareas, hoy, conPlazo = true) {
 function htmlResumen(tareas) {
     const sinHacer = tareas.filter((tarea) => !estaHecha(tarea));
     const frase = sinHacer.length
-        ? `${sinHacer.length === 1 ? 'Te queda' : 'Te quedan'} ${contar(sinHacer)} ${ambito()}.`
+        ? `${sinHacer.length === 1 ? 'Te queda' : 'Te quedan'} <strong>${contar(sinHacer)}</strong> ${ambito()}.`
         : `No te queda nada por hacer ${ambito()}.`;
     return `<p class="resumen">${frase}</p>`;
 }
@@ -227,7 +238,7 @@ function htmlLista() {
     const tramo = (clave, titulo, conPlazo = true) => (tramos.has(clave) ? `
         <section class="tramo">
             <h2 class="tramo-titulo">${titulo}</h2>
-            ${htmlDias(tramos.get(clave), hoy, conPlazo)}
+            ${htmlDias(tramos.get(clave), hoy, { conPlazo })}
         </section>` : '');
 
     const hecho = tramos.get('hecho');
@@ -246,7 +257,7 @@ function htmlLista() {
                 <span class="tramo-cuenta">${hecho.length}</span>
                 ${icono('chevron-down', 18)}
             </summary>
-            ${htmlDias(hecho.reverse(), hoy, false)}
+            ${htmlDias(hecho.reverse(), hoy, { conPlazo: false })}
         </details>` : '');
 }
 
@@ -260,10 +271,11 @@ function htmlCelda(fecha, delDia, hoy) {
     if (trozos.finde) clases.push('celda--finde');
     if (delDia.some((tarea) => tarea.tipo === 'examen')) clases.push('celda--examen');
     if (fecha === hoy) clases.push('celda--hoy');
+    clases.push(urgencia(fecha, hoy, delDia));
 
     const MAX_MARCAS = 3;
     const marcas = delDia.slice(0, MAX_MARCAS).map((tarea) => {
-        const clasesMarca = ['marca'];
+        const clasesMarca = ['marca', tonoDe(tarea.asignatura)];
         if (tarea.tipo === 'examen') clasesMarca.push('marca--examen');
         if (estaHecha(tarea)) clasesMarca.push('marca--hecha');
         return `<span class="${clasesMarca.join(' ')}"><b>${escapar(siglaDe(tarea.asignatura))}</b> ${escapar(tarea.titulo)}</span>`;
@@ -299,6 +311,7 @@ function htmlCalendario() {
     const delDia = elegido ? porDia.get(elegido) ?? [] : [];
 
     return `
+        <div class="calendario-zona">
         <div class="calendario">
             <div class="calendario-cabecera">
                 <h2 class="calendario-mes">${nombreMes(anio, mes)}</h2>
@@ -313,9 +326,10 @@ function htmlCalendario() {
         <section class="tramo">
             <h2 class="tramo-titulo">${partes(elegido).diaYMes}</h2>
             ${delDia.length
-                ? `<ul class="entradas entradas--sueltas">${delDia.map((tarea) => htmlEntrada(tarea)).join('')}</ul>`
+                ? `<ul class="entradas entradas--sueltas ${urgencia(elegido, hoy, delDia)}">${delDia.map((tarea) => htmlEntrada(tarea)).join('')}</ul>`
                 : '<p class="nota">Nada para este día.</p>'}
-        </section>` : '<p class="nota">Elige un día para ver qué hay.</p>'}`;
+        </section>` : '<p class="nota">Elige un día para ver qué hay.</p>'}
+        </div>`;
 }
 
 // ========================================
@@ -333,7 +347,7 @@ function htmlArchivadas() {
         return `
         <section class="tramo">
             <h2 class="tramo-titulo">${nombreMes(anio, mes - 1)}</h2>
-            ${htmlDias(delMes, hoy, false)}
+            ${htmlDias(delMes, hoy, { conPlazo: false, conUrgencia: false })}
         </section>`;
     }).join('');
 }

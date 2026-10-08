@@ -70,7 +70,7 @@ function ponerTema(tema) {
     boton.innerHTML = icono(tema === 'oscuro' ? 'sun' : 'moon', 20);
     boton.title = `Cambiar a tema ${otro}`;
     boton.setAttribute('aria-label', boton.title);
-    $('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--papel').trim();
+    $('meta[name="theme-color"]').content = getComputedStyle(document.documentElement).getPropertyValue('--banda').trim();
 }
 
 function avisar(texto, tipo = '') {

@@ -1,8 +1,10 @@
 /* ========================================
    semiDAM
-   Hojas de calendario sobre papel: tinta azul oscura para escribir, boli azul
-   para lo que se toca, boli rojo para los exámenes y subrayador para hoy.
-   Con el tema oscuro, lo mismo con tiza sobre pizarra.
+   Hojas de calendario sobre papel y un estuche de clase: boli azul para la
+   cabecera y lo que se toca, boli rojo para los exámenes, un rotulador por
+   asignatura, y subrayadores para las fechas: amarillo hoy, naranja si falta
+   una semana o menos, rojo si es hoy o mañana. Lo hecho se marca en verde.
+   Con el tema oscuro, lo mismo con tizas sobre pizarra.
    ======================================== */
 
 @font-face {
@@ -15,20 +17,39 @@
 }
 
 :root {
-    --mesa: #eceef3;
+    --mesa: #e7ecfa;
     --papel: #ffffff;
     --tinta: #181b2e;
-    --lapiz: #5a6077;
-    --raya: #d3d7e1;
+    --lapiz: #555c78;
+    --raya: #cfd6ea;
     --azul: #2337c6;
     --azul-fuerte: #1a2a9e;
     --sobre-azul: #ffffff;
-    --rojo: #cf1f39;
+    --banda: #2337c6;
+    --rojo: #c81e37;
     --sobre-rojo: #ffffff;
+    --rojo-fondo: #ffe3e6;
+    --naranja: #b54708;
+    --naranja-vivo: #f08c00;
+    --naranja-fondo: #ffedd3;
+    --verde: #278238;
+    --sobre-verde: #ffffff;
     --fluor: #ffe55c;
     --sobre-fluor: #181b2e;
 
-    --ancho: 68rem;
+    /* Un rotulador por asignatura, según su posición dentro del curso.
+       Ninguno es rojo ni naranja: esos colores avisan de exámenes y de fechas. */
+    --tono-0: #1971c2;
+    --tono-1: #b0246b;
+    --tono-2: #087f5b;
+    --tono-3: #6741d9;
+    --tono-4: #4f7a0b;
+    --tono-5: #0b7285;
+    --tono-6: #9c36b5;
+    --tono-7: #8a5a2b;
+    --tono-8: #495057;
+
+    --ancho: 96rem;
     --radio: 5px;
     --giro: 1;
 
@@ -36,19 +57,37 @@
 }
 
 :root[data-tema="oscuro"] {
-    --mesa: #1a1f24;
-    --papel: #252b31;
+    --mesa: #161a24;
+    --papel: #222836;
     --tinta: #edeeea;
-    --lapiz: #a3abb5;
-    --raya: #3b434c;
+    --lapiz: #a3abbd;
+    --raya: #384052;
     --azul: #a9b8ff;
     --azul-fuerte: #c5cfff;
     --sobre-azul: #171b2c;
+    --banda: #26349a;
     --rojo: #ff8f96;
     --sobre-rojo: #2b1114;
+    --rojo-fondo: #4a232c;
+    --naranja: #ffb86b;
+    --naranja-vivo: #ff9f1a;
+    --naranja-fondo: #47311a;
+    --verde: #51cf66;
+    --sobre-verde: #0f2912;
+    --tono-8: #6c7686;
 
     color-scheme: dark;
 }
+
+.tono-0 { --asig: var(--tono-0); }
+.tono-1 { --asig: var(--tono-1); }
+.tono-2 { --asig: var(--tono-2); }
+.tono-3 { --asig: var(--tono-3); }
+.tono-4 { --asig: var(--tono-4); }
+.tono-5 { --asig: var(--tono-5); }
+.tono-6 { --asig: var(--tono-6); }
+.tono-7 { --asig: var(--tono-7); }
+.tono-8 { --asig: var(--tono-8); }
 
 :root[data-giro="atras"] {
     --giro: -1;
@@ -206,8 +245,9 @@ button {
     color: var(--lapiz);
 }
 
+/* El fondo al pasar el ratón se saca del propio color del icono: vale sobre papel, banda o subrayado */
 .btn-icono:hover {
-    background: var(--mesa);
+    background: color-mix(in srgb, currentColor 12%, transparent);
     color: var(--tinta);
 }
 
@@ -233,9 +273,23 @@ button {
 }
 
 /* ===== Cabecera ===== */
+/* La cabecera es una banda de boli azul; lo que va dentro se pinta en blanco */
 .cabecera {
-    background: var(--papel);
-    border-bottom: 1px solid var(--raya);
+    background: var(--banda);
+    color: #fff;
+}
+
+.cabecera .btn-icono {
+    color: rgb(255 255 255 / 0.85);
+}
+
+.cabecera .btn-icono:hover {
+    color: #fff;
+}
+
+.cabecera :focus-visible,
+.cabecera .curso:has(:focus-visible) {
+    outline-color: #fff;
 }
 
 .cabecera-dentro {
@@ -256,15 +310,16 @@ button {
 }
 
 .logo--grande {
+    color: var(--azul);
     font-size: 3rem;
 }
 
-/* Selector de curso: las dos hojas, la elegida en tinta */
+/* Selector de curso: una hoja por opción, la elegida en blanco sobre la banda */
 .cursos {
     display: flex;
     order: 3;
     width: 100%;
-    border: 2px solid var(--tinta);
+    border: 2px solid #fff;
     border-radius: var(--radio);
 }
 
@@ -276,7 +331,7 @@ button {
     justify-content: center;
     gap: 0.5rem;
     padding: 0.3rem 1rem 0.25rem;
-    color: var(--lapiz);
+    color: rgb(255 255 255 / 0.78);
     cursor: pointer;
 }
 
@@ -309,17 +364,17 @@ button {
 }
 
 .curso + .curso {
-    border-left: 1px solid var(--raya);
+    border-left: 1px solid rgb(255 255 255 / 0.35);
 }
 
 .curso:has(:checked) {
-    background: var(--tinta);
-    color: var(--papel);
+    background: #fff;
+    color: var(--banda);
 }
 
 .curso:has(:checked),
 .curso:has(:checked) + .curso {
-    border-left-color: var(--tinta);
+    border-left-color: #fff;
 }
 
 .curso:has(:focus-visible) {
@@ -341,7 +396,7 @@ button {
     gap: 0.25rem;
     margin-left: 0.375rem;
     padding-left: 0.875rem;
-    border-left: 1px solid var(--raya);
+    border-left: 1px solid rgb(255 255 255 / 0.3);
 }
 
 .usuario-datos {
@@ -359,7 +414,7 @@ button {
 }
 
 .usuario-rol {
-    color: var(--lapiz);
+    color: rgb(255 255 255 / 0.78);
     font-size: 0.8125rem;
 }
 
@@ -405,6 +460,8 @@ button {
     background: var(--papel);
     border: 1px solid var(--raya);
     border-radius: var(--radio);
+    /* En la tira del móvil, el color de la asignatura es la raya de abajo */
+    box-shadow: inset 0 -3px 0 var(--asig, transparent);
     color: var(--lapiz);
     font-weight: 600;
     cursor: pointer;
@@ -434,10 +491,15 @@ button {
     font-weight: 700;
 }
 
+/* La elegida se rellena con su color; «Todas», que no tiene, con el azul de la cabecera */
 .asignatura:has(:checked) {
-    background: var(--tinta);
-    border-color: var(--tinta);
-    color: var(--papel);
+    background: var(--asig, var(--azul));
+    border-color: var(--asig, var(--azul));
+    color: var(--sobre-azul);
+}
+
+.asignatura[class*="tono-"]:has(:checked) {
+    color: #fff;
 }
 
 .asignatura:has(:checked) .asignatura-cuenta {
@@ -497,7 +559,7 @@ button {
 }
 
 .vistas label:has(:checked) {
-    border-bottom-color: var(--tinta);
+    border-bottom-color: var(--azul);
     color: var(--tinta);
 }
 
@@ -521,6 +583,10 @@ button {
 .resumen {
     margin-bottom: 1.5rem;
     font-size: 1.125rem;
+}
+
+.resumen strong {
+    font-weight: 700;
 }
 
 .nota {
@@ -573,8 +639,13 @@ button {
 }
 
 .tramo-cuenta {
-    color: var(--lapiz);
-    font-weight: 600;
+    padding: 0 0.5rem;
+    background: var(--verde);
+    color: var(--sobre-verde);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    line-height: 1.5;
 }
 
 /* Una hoja de papel por tramo; cada día, su fecha a la izquierda */
@@ -585,6 +656,13 @@ button {
     background: var(--papel);
     border: 1px solid var(--raya);
     border-radius: var(--radio);
+}
+
+/* Para que los subrayados de dentro respeten las esquinas redondeadas */
+.dias,
+.entradas--sueltas,
+.calendario {
+    overflow: hidden;
 }
 
 .dia {
@@ -610,6 +688,39 @@ button {
     color: var(--lapiz);
     font-size: 0.75rem;
     line-height: 1.2;
+}
+
+/* Subrayado de urgencia: naranja si falta una semana o menos, rojo si es hoy o mañana.
+   Se subraya la fecha y lo que queda por hacer; lo ya hecho se queda en blanco. */
+.urge--pronto {
+    --urge-fondo: var(--naranja-fondo);
+    --urge-vivo: var(--naranja-vivo);
+    --urge-texto: var(--naranja);
+}
+
+.urge--ya {
+    --urge-fondo: var(--rojo-fondo);
+    --urge-vivo: var(--rojo);
+    --urge-texto: var(--rojo);
+}
+
+.urge > .dia-fecha,
+.urge > .entradas,
+.entradas.urge {
+    background: var(--urge-fondo);
+}
+
+.urge .entrada--hecha {
+    background: var(--papel);
+}
+
+.urge > .dia-fecha {
+    box-shadow: inset 4px 0 0 var(--urge-vivo);
+}
+
+.urge .dia-plazo {
+    color: var(--urge-texto);
+    font-weight: 700;
 }
 
 /* Hoja de taco de calendario: mes, número grande y día de la semana */
@@ -656,7 +767,12 @@ button {
     font-size: 1.125rem;
 }
 
+/* La hoja grande siempre es la de hoy: lleva su subrayador */
 .hoja--grande .hoja-num {
+    margin: 0.5rem 0;
+    padding: 0 0.75rem;
+    background: var(--fluor);
+    color: var(--sobre-fluor);
     font-size: 7.5rem;
     line-height: 0.92;
 }
@@ -684,11 +800,13 @@ button {
     overflow-wrap: anywhere;
 }
 
+/* Etiqueta de asignatura, rellena con su rotulador */
 .sigla {
     display: inline-block;
     margin-right: 0.3rem;
-    padding: 0 0.3rem;
-    border: 1px solid;
+    padding: 0.05rem 0.375rem;
+    background: var(--asig, var(--lapiz));
+    color: #fff;
     border-radius: 3px;
     font-size: 0.75rem;
     font-weight: 700;
@@ -697,10 +815,6 @@ button {
     letter-spacing: 0.01em;
     text-decoration: none;
     vertical-align: 0.12em;
-}
-
-.entrada--examen .sigla {
-    color: var(--rojo);
 }
 
 .entrada-meta {
@@ -719,6 +833,7 @@ button {
     font-weight: 600;
     text-decoration: underline;
     text-underline-offset: 3px;
+    white-space: nowrap;
 }
 
 .entrada-enlace:hover {
@@ -744,6 +859,8 @@ button {
 }
 
 .entrada--hecha .sigla {
+    background: none;
+    box-shadow: inset 0 0 0 1px currentColor;
     color: var(--lapiz);
 }
 
@@ -776,7 +893,7 @@ button {
     height: 2.25rem;
 }
 
-/* El tic: se rellena con boli azul al marcar */
+/* El tic: se rellena de verde al marcar */
 .tic {
     display: grid;
     grid-row: 1;
@@ -803,15 +920,15 @@ button {
 
 @media (hover: hover) {
     .tic:hover .tic-circulo {
-        border-color: var(--azul);
-        color: var(--azul);
+        border-color: var(--verde);
+        color: var(--verde);
     }
 }
 
 .tic[aria-pressed="true"] .tic-circulo {
-    background: var(--azul);
-    border-color: var(--azul);
-    color: var(--sobre-azul);
+    background: var(--verde);
+    border-color: var(--verde);
+    color: var(--sobre-verde);
 }
 
 .tic--recien .tic-circulo {
@@ -835,6 +952,10 @@ button {
 /* ===== Calendario ===== */
 .calendario {
     margin-bottom: 1.75rem;
+}
+
+.calendario-zona > .nota {
+    padding-top: 0;
 }
 
 .calendario-cabecera {
@@ -891,8 +1012,13 @@ button {
     border-left: 0;
 }
 
-button.celda:hover {
-    background: var(--mesa);
+button.celda:hover:not([aria-pressed="true"]) {
+    box-shadow: inset 0 0 0 2px var(--raya);
+}
+
+/* Los días con algo por hacer llevan el mismo subrayado que en la lista */
+.celda.urge {
+    background: var(--urge-fondo);
 }
 
 .celda[aria-pressed="true"] {
@@ -930,7 +1056,7 @@ button.celda:hover {
     width: 100%;
     height: 4px;
     overflow: hidden;
-    background: var(--tinta);
+    background: var(--asig, var(--tinta));
     border-radius: 2px;
     font-size: 0;
 }
@@ -1119,8 +1245,8 @@ button.celda:hover {
 }
 
 .segmento-opciones label:has(:checked) {
-    background: var(--tinta);
-    color: var(--papel);
+    background: var(--azul);
+    color: var(--sobre-azul);
 }
 
 .segmento-opciones label:has(:focus-visible) {
@@ -1391,7 +1517,9 @@ button.celda:hover {
 
     .marca {
         height: auto;
+        padding-left: 0.3rem;
         background: none;
+        border-left: 3px solid var(--asig, var(--lapiz));
         border-radius: 0;
         font-size: 0.75rem;
         line-height: 1.3;
@@ -1410,6 +1538,7 @@ button.celda:hover {
     }
 
     .marca--hecha {
+        border-left-color: var(--raya);
         color: var(--lapiz);
         text-decoration: line-through;
     }
@@ -1421,6 +1550,11 @@ button.celda:hover {
         position: sticky;
         top: 0;
         z-index: 5;
+    }
+
+    .cabecera-dentro,
+    .cuerpo {
+        padding-inline: 1.5rem;
     }
 
     .cuerpo {
@@ -1447,7 +1581,24 @@ button.celda:hover {
         padding: 0.5rem 0.625rem;
         background: none;
         border: 0;
+        box-shadow: none;
         font-weight: 500;
+    }
+
+    /* En la columna, la sigla es la etiqueta de color; en la elegida se invierte */
+    .asignatura-sigla {
+        justify-self: start;
+        padding: 0.05rem 0.375rem;
+        background: var(--asig);
+        color: #fff;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        line-height: 1.45;
+    }
+
+    .asignatura:has(:checked) .asignatura-sigla {
+        background: #fff;
+        color: var(--asig);
     }
 
     .asignaturas-curso {
@@ -1471,6 +1622,30 @@ button.celda:hover {
 
     .asignatura:hover:not(:has(:checked)) {
         background: var(--papel);
+    }
+}
+
+/* ===== Pantallas muy anchas: más sitio para las asignaturas y el calendario ===== */
+@media (min-width: 75rem) {
+    .cuerpo {
+        grid-template-columns: 17rem minmax(0, 1fr);
+        gap: 3rem;
+    }
+}
+
+@media (min-width: 100rem) {
+    /* El calendario y las tareas del día elegido, uno al lado del otro */
+    .calendario-zona {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 22rem;
+        align-items: start;
+        gap: 2rem;
+    }
+
+    .calendario-zona > .tramo,
+    .calendario-zona > .nota {
+        position: sticky;
+        top: 5.25rem;
     }
 }
 

@@ -10,6 +10,7 @@ Web: https://rjrbio.github.io/semiDam/
 - **Dos cursos.** El selector 1º / 2º / Ambos / Mías de la cabecera cambia lo que se ve sin salir de la página. Cada curso tiene sus asignaturas y sus tareas, y «Ambos» las junta todas. La opción elegida se recuerda en cada navegador.
 - **Mis asignaturas.** Cada persona marca las asignaturas que cursa, de cualquiera de los dos años, y en «Mías» ve solo sus tareas, sus exámenes y sus contadores. Se guardan con su usuario, así que le siguen del móvil al ordenador. Los demás cursos siguen enseñándolo todo.
 - **Lista por fechas.** Las tareas se agrupan en «Se pasó la fecha», «Hoy», «Mañana», «Esta semana», «La semana que viene» y «Más adelante». Lo que ya has hecho y cuya fecha ha pasado se recoge en «Ya hecho».
+- **Colores que avisan.** Lo que queda por hacer se subraya en naranja si falta una semana o menos y en rojo si es hoy o mañana; al marcarlo como hecho, el color desaparece. Cada asignatura tiene además su propio color.
 - **Calendario** mensual, de lunes a domingo. Al pulsar un día se ven sus tareas debajo.
 - **Archivadas**: lo que los administradores retiran de la lista, agrupado por meses.
 - **Filtro por asignatura**, con el número de tareas que te quedan en cada una.

@@ -20,9 +20,13 @@ export const estado = {
     hechoAbierto: false,    // el bloque «Ya hecho» de la lista está desplegado
 };
 
+// Tonos de asignatura definidos en el CSS (--tono-0 … --tono-8); con más asignaturas, se repiten.
+const TONOS = 9;
+
 const idsDeCurso = new Set(CURSOS.map((curso) => curso.id));
 const asignaturas = new Map(
-    CURSOS.flatMap((curso) => curso.asignaturas.map((asignatura) => [asignatura.nombre, { ...asignatura, curso: curso.id }])),
+    CURSOS.flatMap((curso) => curso.asignaturas.map((asignatura, posicion) =>
+        [asignatura.nombre, { ...asignatura, curso: curso.id, tono: posicion % TONOS }])),
 );
 
 export const esAdmin = () => estado.usuario?.rol === 'admin';
@@ -65,6 +69,12 @@ export const cursoDeTarea = (tarea) => (idsDeCurso.has(tarea.curso) ? tarea.curs
 
 /** «1º» o «2º», según el curso de la tarea. */
 export const ordinalDe = (tarea) => CURSOS.find((curso) => curso.id === cursoDeTarea(tarea)).ordinal;
+
+/** Clase CSS con el color de la asignatura; las que no están en la configuración van sin color. */
+export function tonoDe(asignatura) {
+    const conocida = asignaturas.get(asignatura);
+    return conocida ? `tono-${conocida.tono}` : '';
+}
 
 export const siglaDe = (asignatura) => asignaturas.get(asignatura)?.sigla ?? asignatura.slice(0, 4).toUpperCase();
 
