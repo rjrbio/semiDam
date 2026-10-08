@@ -2,195 +2,160 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestor de Tareas DAM</title>
-    <link rel="stylesheet" href="styles.css">
-    <!-- CDN de iconos (Lucide) -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>semiDAM: tareas y exámenes de DAM</title>
+    <meta name="description" content="Las tareas y los exámenes de 1º y 2º de DAM semipresencial, con sus fechas, para toda la clase.">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="css/estilos.css">
+    <script>
+        // El tema se pone antes de pintar la página para que no parpadee.
+        (function () {
+            var tema = null;
+            try { tema = localStorage.getItem('tema-semidam'); } catch (error) { /* sin almacenamiento */ }
+            if (tema !== 'claro' && tema !== 'oscuro') {
+                tema = matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro';
+            }
+            document.documentElement.dataset.tema = tema;
+        })();
+    </script>
+    <script type="module" src="js/app.js"></script>
 </head>
-<body class="min-h-screen app-shell">
-    <div class="max-w-6xl mx-auto p-2 sm:p-4 app-container">
-        <!-- Header -->
-        <header class="card app-header">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div class="brand text-center sm:text-left">
-                    <h1 class="brand-title flex items-center justify-center sm:justify-start gap-2">
-                        <i data-lucide="book-open" class="text-indigo-600"></i>
-                        <span class="hidden xs:inline">Gestor de Tareas DAM</span>
-                        <span class="xs:hidden">Tareas DAM</span>
-                    </h1>
-                    <p class="brand-subtitle">Organiza tus tareas y exámenes</p>
-                </div>
-                <div class="flex gap-2 sm:gap-3 justify-center sm:justify-end items-center">
-                    <button id="btn-tema" class="btn btn-icon btn-theme" title="Cambiar tema">
-                        <i data-lucide="sun" size="18"></i>
-                        <span class="hidden sm:inline">Tema</span>
-                    </button>
-                    <button id="btn-sincronizar" class="btn btn-success btn-icon" title="Sincronizar con la nube">
-                        <i data-lucide="refresh-cw" size="18"></i>
-                        <span class="hidden sm:inline">Sync</span>
-                    </button>
-                    <button id="btn-nueva-tarea" class="btn btn-primary btn-icon">
-                        <i data-lucide="plus" size="18"></i>
-                        <span class="hidden xs:inline">Nueva Tarea</span>
-                        <span class="xs:hidden">Nueva</span>
-                    </button>
-                </div>
-            </div>
-        </header>
+<body>
+    <a class="salto" href="#contenido">Saltar a las tareas</a>
 
-        <!-- Formulario (inicialmente oculto) -->
-        <div id="formulario-tarea" class="card form-card hidden">
-            <h2 class="section-title">Añadir Tarea o Examen</h2>
-            <form id="form-tarea" class="form-grid">
-                <div class="form-field sm:col-span-2 md:col-span-1">
-                    <label class="form-label">Título</label>
-                    <input type="text" id="titulo" name="titulo" required
-                           class="input"
-                           placeholder="Ej: Práctica SQL">
-                </div>
+    <header class="cabecera">
+        <div class="cabecera-dentro">
+            <h1 class="logo">semiDAM</h1>
 
-                <div class="form-field sm:col-span-2 md:col-span-1">
-                    <label class="form-label">Asignatura</label>
-                    <select id="asignatura" name="asignatura" required
-                            class="input">
-                        <option value="Bases de datos">Bases de datos</option>
-                        <option value="Digitalización">Digitalización</option>
-                        <option value="Entornos de desarrollo">Entornos de desarrollo</option>
-                        <option value="IPE1">IPE1</option>
-                        <option value="Lenguajes de marca">Lenguajes de marca</option>
-                        <option value="Programación">Programación</option>
-                        <option value="Sistemas informáticos">Sistemas informáticos</option>
-                        <option value="Sostenibilidad">Sostenibilidad</option>
-                    </select>
-                </div>
+            <div id="cursos" class="cursos" role="radiogroup" aria-label="Curso"></div>
 
-                <div class="form-field">
-                    <label class="form-label">Tipo</label>
-                    <select id="tipo" name="tipo" required
-                            class="input">
-                        <option value="tarea">Tarea</option>
-                        <option value="examen">Examen</option>
-                    </select>
-                </div>
-
-                <div class="form-field">
-                    <label class="form-label">Fecha de entrega</label>
-                    <input type="date" id="fecha" name="fecha" required
-                           class="input">
-                </div>
-
-                <div class="form-field">
-                    <label class="form-label">Plataforma</label>
-                    <select id="plataforma" name="plataforma" required
-                            class="input">
-                        <option value="Junta de Andalucía">Junta de Andalucía</option>
-                        <option value="Portada">Portada</option>
-                    </select>
-                </div>
-
-                <div class="form-field">
-                    <label class="form-label">Descripción (opcional)</label>
-                    <input type="text" id="descripcion" name="descripcion"
-                           class="input" placeholder="Detalles adicionales">
-                </div>
-
-                <div class="form-actions sm:col-span-2">
-                    <button type="submit" class="btn btn-primary">
-                        Agregar
-                    </button>
-                    <button type="button" id="btn-cancelar" class="btn btn-secondary">
-                        Cancelar
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        <!-- Filtros y Controles de Vista -->
-        <div class="card toolbar">
-            <div class="toolbar-inner">
-                <!-- Filtros de asignaturas -->
-                <div id="filtros" class="flex flex-wrap gap-1 sm:gap-2">
-                    <button data-filtro="Todas" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm">
-                        Todas
-                    </button>
-                    <button data-filtro="Bases de datos" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Bases de datos</span>
-                        <span class="sm:hidden">BBDD</span>
-                    </button>
-                    <button data-filtro="Digitalización" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Digitalización</span>
-                        <span class="sm:hidden">Digital</span>
-                    </button>
-                    <button data-filtro="Entornos de desarrollo" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Entornos de desarrollo</span>
-                        <span class="sm:hidden">ED</span>
-                    </button>
-                    <button data-filtro="IPE1" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        IPE1
-                    </button>
-                    <button data-filtro="Lenguajes de marca" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Lenguajes de marca</span>
-                        <span class="sm:hidden">LM</span>
-                    </button>
-                    <button data-filtro="Programación" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Programación</span>
-                        <span class="sm:hidden">Prog</span>
-                    </button>
-                    <button data-filtro="Sistemas informáticos" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Sistemas informáticos</span>
-                        <span class="sm:hidden">SI</span>
-                    </button>
-                    <button data-filtro="Sostenibilidad" class="filtro-btn px-2 sm:px-4 py-1 sm:py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm">
-                        <span class="hidden sm:inline">Sostenibilidad</span>
-                        <span class="sm:hidden">Sost</span>
-                    </button>
-                </div>
-                
-                <!-- Separador -->
-                <div class="divider"></div>
-                
-                <!-- Controles de vista y archivados -->
-                <div class="flex flex-wrap gap-2 items-center justify-between">
-                    <div class="toolbar-group">
-                        <button id="btn-vista-lista" class="vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-indigo-600 text-white text-xs sm:text-sm flex items-center gap-1">
-                            <i data-lucide="list" size="16"></i>
-                            <span>Lista</span>
-                        </button>
-                        <button id="btn-vista-calendario" class="vista-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm flex items-center gap-1">
-                            <i data-lucide="calendar" size="16"></i>
-                            <span>Calendario</span>
-                        </button>
-                    </div>
-                    
-                    <button data-filtro="Archivadas" class="filtro-btn px-3 sm:px-4 py-2 rounded-lg transition-colors bg-gray-100 text-gray-700 hover:bg-gray-200 text-xs sm:text-sm flex items-center gap-1">
-                        <i data-lucide="archive" size="16"></i>
-                        <span>Archivadas</span>
-                    </button>
+            <div class="cabecera-lado">
+                <button type="button" id="btn-tema" class="btn-icono" data-accion="tema"></button>
+                <div id="usuario" class="usuario" hidden>
+                    <span class="usuario-datos">
+                        <span id="usuario-nombre" class="usuario-nombre"></span>
+                        <span id="usuario-rol" class="usuario-rol"></span>
+                    </span>
+                    <button type="button" class="btn-icono" data-accion="salir" data-icono="log-out" data-lado="20" title="Cerrar sesión" aria-label="Cerrar sesión"></button>
                 </div>
             </div>
         </div>
+    </header>
 
-        <!-- Contenedor de Tareas (Lista y Calendario) -->
-        <div id="lista-tareas" class="space-y-4 task-list">
-            <!-- Las tareas se insertarán aquí dinámicamente -->
-        </div>
-        
-        <div id="vista-calendario" class="hidden calendar-view">
-            <!-- El calendario se insertará aquí dinámicamente -->
-        </div>
+    <p id="sin-conexion" class="sin-conexion" role="status" hidden>
+        Sin conexión. Ves lo último que se guardó en este dispositivo; lo que marques se enviará al recuperarla.
+    </p>
+
+    <div class="cuerpo">
+        <aside id="asignaturas" class="asignaturas" role="radiogroup" aria-label="Asignatura"></aside>
+
+        <main id="contenido" class="contenido">
+            <div class="barra">
+                <div class="vistas" role="radiogroup" aria-label="Vista">
+                    <label><input type="radio" name="ver-vista" value="lista" checked>Lista</label>
+                    <label><input type="radio" name="ver-vista" value="calendario">Calendario</label>
+                    <label><input type="radio" name="ver-vista" value="archivadas">Archivadas</label>
+                </div>
+                <button type="button" id="btn-nueva" class="btn btn-primario" data-accion="nueva" data-icono="plus" hidden>Nueva tarea</button>
+            </div>
+
+            <div id="vista"></div>
+
+            <footer id="pie" class="pie" hidden>
+                <button type="button" class="btn-texto" data-accion="exportar" data-icono="download" data-lado="16">Descargar una copia de todas las tareas</button>
+            </footer>
+        </main>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script src="user-system.js"></script>
-    <script src="script.js"></script>
-    <script>
-        // Inicializar iconos de Lucide
-        lucide.createIcons();
-    </script>
+    <dialog id="dlg-entrar" class="dialogo dialogo--corto" aria-labelledby="entrar-titulo">
+        <form id="form-entrar" class="dialogo-dentro" novalidate>
+            <div>
+                <p class="logo logo--grande">semiDAM</p>
+                <p class="dialogo-lema">Las tareas y los exámenes de DAM, con sus fechas.</p>
+            </div>
+            <h2 id="entrar-titulo" class="dialogo-titulo">Entra con tu nombre</h2>
+            <label class="campo">
+                <span class="campo-rotulo">Nombre</span>
+                <input type="text" name="nombre" maxlength="40" autocomplete="nickname" autocapitalize="words" spellcheck="false" aria-describedby="entrar-ayuda entrar-error">
+                <span id="entrar-ayuda" class="campo-ayuda">Usa siempre el mismo: con él se guarda lo que marcas como hecho.</span>
+                <span id="entrar-error" class="campo-error" hidden>Escribe tu nombre para entrar.</span>
+            </label>
+            <button type="submit" id="entrar-boton" class="btn btn-primario">Entrar</button>
+            <div id="recientes" class="recientes" hidden>
+                <p class="campo-rotulo">Ya se ha entrado aquí como</p>
+                <div id="recientes-lista" class="recientes-lista"></div>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="dlg-tarea" class="dialogo" aria-labelledby="tarea-titulo">
+        <form id="form-tarea" class="dialogo-dentro">
+            <h2 id="tarea-titulo" class="dialogo-titulo">Nueva tarea</h2>
+
+            <fieldset class="segmento">
+                <legend class="campo-rotulo">Tipo</legend>
+                <div class="segmento-opciones">
+                    <label><input type="radio" name="tipo" value="tarea" checked>Tarea</label>
+                    <label><input type="radio" name="tipo" value="examen">Examen</label>
+                </div>
+            </fieldset>
+
+            <label class="campo">
+                <span class="campo-rotulo">Título</span>
+                <input type="text" name="titulo" required maxlength="80" placeholder="Práctica de SQL">
+            </label>
+
+            <div class="campos-fila">
+                <fieldset class="segmento">
+                    <legend class="campo-rotulo">Curso</legend>
+                    <div id="tarea-cursos" class="segmento-opciones"></div>
+                </fieldset>
+                <label class="campo">
+                    <span class="campo-rotulo">Asignatura</span>
+                    <select name="asignatura" required></select>
+                </label>
+            </div>
+
+            <div class="campos-fila">
+                <label class="campo">
+                    <span id="tarea-fecha" class="campo-rotulo">Fecha de entrega</span>
+                    <input type="date" name="fecha" required>
+                </label>
+                <label class="campo">
+                    <span class="campo-rotulo">Plataforma</span>
+                    <select name="plataforma" required></select>
+                </label>
+            </div>
+
+            <label class="campo">
+                <span class="campo-rotulo">Descripción <span class="campo-opcional">(opcional)</span></span>
+                <textarea name="descripcion" rows="3" maxlength="500"></textarea>
+            </label>
+
+            <div class="dialogo-botones">
+                <button type="button" class="btn btn-secundario" data-accion="cancelar">Cancelar</button>
+                <button type="submit" id="tarea-boton" class="btn btn-primario">Añadir tarea</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="dlg-confirmar" class="dialogo dialogo--corto" aria-labelledby="confirmar-titulo" aria-describedby="confirmar-texto">
+        <form method="dialog" class="dialogo-dentro">
+            <h2 id="confirmar-titulo" class="dialogo-titulo"></h2>
+            <p id="confirmar-texto"></p>
+            <div class="dialogo-botones">
+                <button type="submit" value="no" class="btn btn-secundario">Cancelar</button>
+                <button type="submit" value="si" id="confirmar-boton" class="btn btn-peligro"></button>
+            </div>
+        </form>
+    </dialog>
+
+    <div id="avisos" class="avisos" role="status" aria-live="polite"></div>
+
+    <noscript>
+        <p class="sin-conexion">semiDAM necesita JavaScript para mostrar las tareas.</p>
+    </noscript>
 </body>
 </html>

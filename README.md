@@ -1,130 +1,90 @@
-# 📋 Gestor de Tareas DAM - Sistema Colaborativo
+# semiDAM
 
-## 🎯 Descripción
+Las tareas y los exámenes de DAM semipresencial, con sus fechas, para toda la clase.
+Los administradores publican las tareas y cada estudiante marca las que ya ha entregado.
 
-Sistema de gestión de tareas colaborativo diseñado para estudiantes y profesores de DAM (Desarrollo de Aplicaciones Multiplataforma). Permite crear, asignar y realizar seguimiento del progreso de tareas de forma colaborativa en tiempo real.
+Web: https://rjrbio.github.io/semiDam/
 
-## ✨ Características Principales
+## Qué hace
 
-### 🔥 **Persistencia de Datos con Firebase**
-- **Usuarios**: Los usuarios y su progreso se almacenan en Firebase Firestore
-- **Tareas**: Sincronización automática de tareas entre todos los usuarios
-- **Progreso**: Seguimiento del progreso individual guardado en la nube
-- **Modo Offline**: Respaldo en localStorage cuando no hay conexión
+- **Dos cursos.** El selector 1º / 2º de la cabecera cambia de curso sin salir de la página; cada uno tiene sus asignaturas y sus tareas. El curso elegido se recuerda en cada navegador.
+- **Lista por fechas.** Las tareas se agrupan en «Se pasó la fecha», «Hoy», «Mañana», «Esta semana», «La semana que viene» y «Más adelante». Lo que ya has hecho y cuya fecha ha pasado se recoge en «Ya hecho».
+- **Calendario** mensual, de lunes a domingo. Al pulsar un día se ven sus tareas debajo.
+- **Archivadas**: lo que los administradores retiran de la lista, agrupado por meses.
+- **Filtro por asignatura**, con el número de tareas que te quedan en cada una.
+- **Progreso personal.** Cada persona marca lo suyo; no se muestra el progreso de los demás.
+- **Tiempo real y sin conexión.** Los cambios llegan a todos sin recargar. Si no hay red se ve lo último guardado y lo que marques se envía al recuperarla.
+- **Tema claro y oscuro.**
 
-### 👥 **Sistema Multi-Usuario**
-- **Roles diferenciados**:
-  - 👨‍🏫 **Administrador**: Crear, editar y eliminar tareas
-  - 👨‍🎓 **Estudiante**: Marcar progreso personal en tareas
-- **Usuarios recientes**: Acceso rápido a usuarios utilizados anteriormente
-- **Persistencia**: Los usuarios nunca se pierden, incluso al limpiar el navegador
+Los administradores, además, pueden añadir, editar, archivar y eliminar tareas, y descargar una copia en JSON.
 
-### 📊 **Seguimiento de Progreso**
-- Indicadores visuales de progreso por tarea
-- Estadísticas en tiempo real del avance de cada usuario
-- Barras de progreso con porcentajes
-- Visualización del estado global de cada tarea
-
-### 🎨 **Interfaz Moderna**
-- Diseño responsive con Tailwind CSS
-- Iconos Lucide para una interfaz limpia
-- Modales interactivos para login y gestión
-- Indicadores de estado de conexión
-
-## 📁 Estructura del Proyecto
+## Estructura
 
 ```
-semidam/
-├── index.html              # Página principal
-├── firebase-config.js      # Configuración y funciones de Firebase
-├── user-system.js         # Sistema de usuarios y autenticación
-├── script.js              # Lógica principal de la aplicación
-└── README.md              # Este archivo
+index.html          Página y diálogos
+css/estilos.css     Estilos (colores y medidas en variables al principio del archivo)
+js/config.js        Proyecto de Firebase, cursos, asignaturas, plataformas y administradores
+js/db.js            Lectura y escritura en Firestore
+js/estado.js        Estado de la aplicación y consultas sobre él
+js/vistas.js        HTML de la lista, el calendario y las archivadas
+js/app.js           Arranque, eventos y acciones
+js/memoria.js       Lo que se recuerda en el navegador (sesión, curso, tema)
+js/fechas.js        Utilidades de fechas
+js/iconos.js        Iconos SVG
+fonts/              Tipografía Archivo
+firestore.rules     Reglas de seguridad que necesita la app
 ```
 
-## 🔧 Funcionalidades Técnicas
+No hay dependencias que instalar ni paso de compilación: es HTML, CSS y módulos de JavaScript.
 
-### Firebase Integration
-- **Conexión automática**: El sistema se conecta automáticamente a Firebase al cargar
-- **Sincronización en tiempo real**: Los cambios se propagan inmediatamente a todos los usuarios
-- **Manejo de errores**: Fallback automático a localStorage si Firebase no está disponible
+## Probarla en local
 
-### Sistema de Usuarios
-- **Autenticación simple**: Login por nombre de usuario sin contraseña
-- **Roles automáticos**: Asignación de roles basada en lista de administradores
-- **Persistencia**: Los usuarios se guardan en Firebase y localStorage
-- **Último acceso**: Tracking automático de la última vez que el usuario accedió
+Los módulos de JavaScript no cargan abriendo `index.html` con doble clic; hace falta un servidor local. Cualquiera de estos sirve:
 
-### Gestión de Tareas
-- **CRUD completo**: Crear, leer, actualizar y eliminar tareas (solo administradores)
-- **Estados**: Pendiente, En Progreso, Completada
-- **Prioridades**: Baja, Media, Alta, Urgente
-- **Progreso colaborativo**: Múltiples usuarios pueden marcar su progreso individual
-
-## 🎮 Uso del Sistema
-
-### Para Estudiantes:
-1. Introduce tu nombre en el login
-2. Visualiza las tareas asignadas
-3. Marca tu progreso individual haciendo clic en las tareas
-4. Ve el progreso general de la clase
-
-### Para Administradores:
-1. Introduce tu nombre (debe estar en la lista de administradores)
-2. Crea nuevas tareas con el botón "Nueva Tarea"
-3. Edita o elimina tareas existentes
-4. Monitorea el progreso de todos los estudiantes
-
-## 🔒 Seguridad y Privacidad
-
-- **Sin autenticación compleja**: Sistema diseñado para uso en aula
-- **Datos públicos**: Toda la información es visible para todos los usuarios
-- **Sin datos sensibles**: No se almacenan contraseñas ni información personal
-
-## 🌐 Compatibilidad
-
-- **Navegadores**: Chrome, Firefox, Safari, Edge (versiones modernas)
-- **Dispositivos**: Desktop, tablet y móvil
-- **Conectividad**: Funciona online (Firebase) y offline (localStorage)
-
-## 🛠️ Personalización
-
-### Añadir Nuevos Estados de Tarea
-Edita `script.js` y modifica el array `ESTADOS`:
-
-```javascript
-const ESTADOS = {
-    'pendiente': { texto: 'Pendiente', color: 'bg-gray-500', icono: 'clock' },
-    'en-progreso': { texto: 'En Progreso', color: 'bg-blue-500', icono: 'play-circle' },
-    'completada': { texto: 'Completada', color: 'bg-green-500', icono: 'check-circle' },
-    'tu-nuevo-estado': { texto: 'Tu Estado', color: 'bg-purple-500', icono: 'tu-icono' }
-};
+```
+npx serve
+python -m http.server
 ```
 
-### Cambiar Colores de Prioridad
-Modifica el objeto `PRIORIDADES` en `script.js`:
+o la extensión Live Server de VS Code. Ojo: en local se trabaja contra la misma base de datos que la web publicada.
 
-```javascript
-const PRIORIDADES = {
-    'baja': { texto: 'Baja', color: 'text-green-600' },
-    'media': { texto: 'Media', color: 'text-yellow-600' },
-    'alta': { texto: 'Alta', color: 'text-orange-600' },
-    'urgente': { texto: 'Urgente', color: 'text-red-600' }
-};
-```
+## Configuración
 
-## 🤝 Contribuir
+Todo está en `js/config.js`:
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Añadir nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+- `CURSOS`: los cursos y las asignaturas de cada uno. El `nombre` de la asignatura es lo que se guarda en cada tarea, así que no conviene cambiarlo si ya hay tareas con él; la `sigla` es solo visual.
+- `PLATAFORMAS`: dónde se entrega cada tarea.
+- `ADMINISTRADORES`: quien entra por primera vez con uno de estos nombres queda registrado como administrador.
 
-## 📄 Licencia
+## Datos en Firestore
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
+| Colección | Documento | Campos |
+| --- | --- | --- |
+| `tareas` | uno por tarea o examen | `titulo`, `tipo` (`tarea` o `examen`), `curso` (1 o 2), `asignatura`, `fecha` (AAAA-MM-DD), `plataforma`, `descripcion`, `archivada`, `progresoUsuarios` (nombre → `true`/`false`), `fechaCreacion`, `fechaModificacion` |
+| `usuarios` | uno por persona; el id es su nombre en minúsculas | `nombre`, `rol` (`admin` o `estudiante`), `ultimoAcceso` |
 
-## 👨‍💻 Autor
+Las tareas anteriores al selector de curso no tienen el campo `curso`: se les asigna el de su asignatura y, si no se reconoce, primero.
 
-Desarrollado para el curso de DAM - Sistema de gestión colaborativa de tareas.
+Para cambiar el rol de alguien que ya ha entrado, edita el campo `rol` de su documento en la consola de Firebase.
+
+### Reglas
+
+`firestore.rules` contiene las reglas que necesita la app. Se publican en Firebase Console > Firestore Database > Reglas. Sin el bloque de `usuarios` la app funciona igual, pero los usuarios solo se recuerdan en cada navegador.
+
+## Seguridad
+
+Se entra solo con el nombre, sin contraseña, y las reglas permiten leer y escribir a cualquiera que tenga la dirección de la web. Está pensada para una clase en la que hay confianza: los roles ordenan la interfaz, no protegen los datos. Si algún día hiciera falta protegerlos, el paso natural es Firebase Authentication para los administradores y unas reglas que solo dejen a los demás cambiar su propio progreso.
+
+## Publicación
+
+GitHub Pages sirve la rama `main` tal cual: basta con hacer `git push`.
+
+## Créditos
+
+- Tipografía [Archivo](https://github.com/Omnibus-Type/Archivo), de Omnibus-Type (SIL Open Font License, en `fonts/OFL.txt`).
+- Iconos de [Lucide](https://lucide.dev) (licencia ISC).
+- Base de datos: [Cloud Firestore](https://firebase.google.com/docs/firestore).
+
+## Licencia
+
+MIT. Ver `LICENSE`.

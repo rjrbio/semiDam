@@ -1,0 +1,1333 @@
+/* ========================================
+   semiDAM
+   Hojas de calendario sobre papel: tinta azul oscura para escribir, boli azul
+   para lo que se toca, boli rojo para los exámenes y subrayador para hoy.
+   Con el tema oscuro, lo mismo con tiza sobre pizarra.
+   ======================================== */
+
+@font-face {
+    font-family: 'Archivo';
+    src: url('../fonts/archivo-latin.woff2') format('woff2');
+    font-weight: 100 900;
+    font-stretch: 62% 125%;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --mesa: #eceef3;
+    --papel: #ffffff;
+    --tinta: #181b2e;
+    --lapiz: #5a6077;
+    --raya: #d3d7e1;
+    --azul: #2337c6;
+    --azul-fuerte: #1a2a9e;
+    --sobre-azul: #ffffff;
+    --rojo: #cf1f39;
+    --sobre-rojo: #ffffff;
+    --fluor: #ffe55c;
+    --sobre-fluor: #181b2e;
+
+    --ancho: 68rem;
+    --radio: 5px;
+    --giro: 1;
+
+    color-scheme: light;
+}
+
+:root[data-tema="oscuro"] {
+    --mesa: #1a1f24;
+    --papel: #252b31;
+    --tinta: #edeeea;
+    --lapiz: #a3abb5;
+    --raya: #3b434c;
+    --azul: #a9b8ff;
+    --azul-fuerte: #c5cfff;
+    --sobre-azul: #171b2c;
+    --rojo: #ff8f96;
+    --sobre-rojo: #2b1114;
+
+    color-scheme: dark;
+}
+
+:root[data-giro="atras"] {
+    --giro: -1;
+}
+
+/* ===== Base ===== */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    margin: 0;
+    min-height: 100dvh;
+    background: var(--mesa);
+    color: var(--tinta);
+    font: 400 1rem/1.45 'Archivo', system-ui, 'Segoe UI', Roboto, Arial, sans-serif;
+}
+
+body:has(dialog[open]) {
+    overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+p,
+ul,
+ol {
+    margin: 0;
+    padding: 0;
+}
+
+ul,
+ol {
+    list-style: none;
+}
+
+fieldset {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+legend {
+    padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+:focus-visible {
+    outline: 2px solid var(--azul);
+    outline-offset: 2px;
+}
+
+.icono {
+    flex: none;
+}
+
+.oculto-visual {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.salto {
+    position: absolute;
+    top: -4rem;
+    left: 1rem;
+    z-index: 30;
+    padding: 0.5rem 0.75rem;
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: var(--radio);
+}
+
+.salto:focus {
+    top: 0.5rem;
+}
+
+/* ===== Botones ===== */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.95rem;
+    border: 1px solid transparent;
+    border-radius: var(--radio);
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.btn-primario {
+    background: var(--azul);
+    color: var(--sobre-azul);
+}
+
+.btn-primario:hover:not(:disabled) {
+    background: var(--azul-fuerte);
+}
+
+.btn-secundario {
+    background: var(--papel);
+    border-color: var(--lapiz);
+}
+
+.btn-secundario:hover {
+    border-color: var(--tinta);
+}
+
+.btn-peligro {
+    background: var(--rojo);
+    color: var(--sobre-rojo);
+}
+
+.btn-icono {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: var(--radio);
+    color: var(--lapiz);
+}
+
+.btn-icono:hover {
+    background: var(--mesa);
+    color: var(--tinta);
+}
+
+.btn-icono--peligro:hover {
+    color: var(--rojo);
+}
+
+.btn-texto {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0;
+    background: none;
+    border: 0;
+    color: var(--lapiz);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.btn-texto:hover {
+    color: var(--tinta);
+}
+
+/* ===== Cabecera ===== */
+.cabecera {
+    background: var(--papel);
+    border-bottom: 1px solid var(--raya);
+}
+
+.cabecera-dentro {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem 1.5rem;
+    max-width: var(--ancho);
+    margin: 0 auto;
+    padding: 0.625rem 1rem;
+}
+
+.logo {
+    font-size: 1.75rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
+.logo--grande {
+    font-size: 3rem;
+}
+
+/* Selector de curso: las dos hojas, la elegida en tinta */
+.cursos {
+    display: flex;
+    order: 3;
+    width: 100%;
+    border: 2px solid var(--tinta);
+    border-radius: var(--radio);
+}
+
+.curso {
+    position: relative;
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.3rem 1rem 0.25rem;
+    color: var(--lapiz);
+    cursor: pointer;
+}
+
+.curso input,
+.asignatura input,
+.vistas input,
+.segmento-opciones input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.curso-ordinal {
+    font-size: 2rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
+.curso-nombre {
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.curso:has(:checked) {
+    background: var(--tinta);
+    color: var(--papel);
+}
+
+.curso:has(:focus-visible) {
+    z-index: 1;
+    outline: 2px solid var(--azul);
+    outline-offset: 3px;
+}
+
+.cabecera-lado {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+
+.usuario {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: 0.375rem;
+    padding-left: 0.875rem;
+    border-left: 1px solid var(--raya);
+}
+
+.usuario-datos {
+    display: grid;
+    line-height: 1.2;
+    text-align: right;
+}
+
+.usuario-nombre {
+    max-width: 9rem;
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.usuario-rol {
+    color: var(--lapiz);
+    font-size: 0.8125rem;
+}
+
+.sin-conexion {
+    padding: 0.5rem 1rem;
+    background: var(--fluor);
+    color: var(--sobre-fluor);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* ===== Estructura ===== */
+.cuerpo {
+    display: grid;
+    gap: 1rem;
+    max-width: var(--ancho);
+    margin: 0 auto;
+    padding: 1rem 1rem 6rem;
+}
+
+.contenido {
+    min-width: 0;
+}
+
+/* ===== Asignaturas ===== */
+.asignaturas {
+    display: flex;
+    gap: 0.375rem;
+    margin: 0 -1rem;
+    padding: 0.25rem 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.asignatura {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.7rem;
+    background: var(--papel);
+    border: 1px solid var(--raya);
+    border-radius: var(--radio);
+    color: var(--lapiz);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.asignatura-sigla {
+    font-weight: 700;
+    font-stretch: 80%;
+    letter-spacing: 0.01em;
+}
+
+.asignatura-cuenta {
+    color: var(--azul);
+    font-size: 0.8125rem;
+    font-weight: 700;
+}
+
+.asignatura:has(:checked) {
+    background: var(--tinta);
+    border-color: var(--tinta);
+    color: var(--papel);
+}
+
+.asignatura:has(:checked) .asignatura-cuenta {
+    color: inherit;
+}
+
+.asignatura:has(:focus-visible) {
+    outline: 2px solid var(--azul);
+    outline-offset: 2px;
+}
+
+/* ===== Barra de vistas ===== */
+.barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--raya);
+}
+
+.vistas {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.vistas label {
+    position: relative;
+    margin-bottom: -1px;
+    padding: 0.625rem 0;
+    border-bottom: 3px solid transparent;
+    color: var(--lapiz);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.vistas label:has(:checked) {
+    border-bottom-color: var(--tinta);
+    color: var(--tinta);
+}
+
+.vistas label:has(:focus-visible) {
+    border-radius: 2px;
+    outline: 2px solid var(--azul);
+    outline-offset: 2px;
+}
+
+#btn-nueva {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 6;
+    min-height: 3rem;
+    padding-inline: 1.125rem;
+    box-shadow: 0 6px 16px rgb(15 17 30 / 0.3);
+}
+
+/* ===== Lista ===== */
+.resumen {
+    margin-bottom: 1.5rem;
+    font-size: 1.125rem;
+}
+
+.nota {
+    padding: 0.5rem 0;
+    color: var(--lapiz);
+}
+
+.tramo {
+    margin-bottom: 2rem;
+}
+
+.tramo-titulo {
+    margin-bottom: 0.625rem;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    font-stretch: 75%;
+    line-height: 1.2;
+}
+
+.tramo-titulo::first-letter,
+.calendario-mes::first-letter {
+    text-transform: uppercase;
+}
+
+.tramo-plegar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: fit-content;
+    margin-bottom: 0.625rem;
+    list-style: none;
+    cursor: pointer;
+}
+
+.tramo-plegar::-webkit-details-marker {
+    display: none;
+}
+
+.tramo-plegar .tramo-titulo {
+    margin: 0;
+}
+
+.tramo-plegar .icono {
+    color: var(--lapiz);
+    transition: rotate 0.15s;
+}
+
+.tramo--hecho[open] .tramo-plegar .icono {
+    rotate: 180deg;
+}
+
+.tramo-cuenta {
+    color: var(--lapiz);
+    font-weight: 600;
+}
+
+/* Una hoja de papel por tramo; cada día, su fecha a la izquierda */
+.dias,
+.entradas--sueltas,
+.calendario,
+.vacio {
+    background: var(--papel);
+    border: 1px solid var(--raya);
+    border-radius: var(--radio);
+}
+
+.dia {
+    display: grid;
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+}
+
+.dia + .dia {
+    border-top: 1px solid var(--raya);
+}
+
+.dia-fecha {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.875rem 0.25rem;
+    border-right: 1px solid var(--raya);
+    text-align: center;
+}
+
+.dia-plazo {
+    color: var(--lapiz);
+    font-size: 0.75rem;
+    line-height: 1.2;
+}
+
+/* Hoja de taco de calendario: mes, número grande y día de la semana */
+.hoja {
+    display: grid;
+    justify-items: center;
+    line-height: 1;
+}
+
+.hoja-mes,
+.hoja-semana {
+    color: var(--lapiz);
+    font-size: 0.8125rem;
+    font-weight: 600;
+}
+
+.hoja-num {
+    margin: 0.1rem 0;
+    padding: 0 0.3rem;
+    border-radius: 2px;
+    font-size: 2.75rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
+.dia--examen .hoja-mes,
+.dia--examen .hoja-num,
+.dia--examen .hoja-semana {
+    color: var(--rojo);
+}
+
+.dia--hecho .hoja > span {
+    color: var(--lapiz);
+}
+
+.dia--hoy .hoja > .hoja-num {
+    background: var(--fluor);
+    color: var(--sobre-fluor);
+}
+
+.hoja--grande .hoja-mes,
+.hoja--grande .hoja-semana {
+    font-size: 1.125rem;
+}
+
+.hoja--grande .hoja-num {
+    font-size: 7.5rem;
+    line-height: 0.92;
+}
+
+/* ===== Entrada: una tarea o un examen ===== */
+.entrada {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    padding: 0.625rem 0.375rem 0.625rem 0.875rem;
+}
+
+.entrada + .entrada {
+    border-top: 1px solid var(--raya);
+}
+
+.entrada-cuerpo {
+    padding: 0.375rem 0;
+}
+
+.entrada-titulo {
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.sigla {
+    display: inline-block;
+    margin-right: 0.3rem;
+    padding: 0 0.3rem;
+    border: 1px solid;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-stretch: 80%;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    vertical-align: 0.12em;
+}
+
+.entrada--examen .sigla {
+    color: var(--rojo);
+}
+
+.entrada-meta {
+    margin-top: 0.125rem;
+    color: var(--lapiz);
+    font-size: 0.9375rem;
+}
+
+.entrada-meta strong {
+    color: var(--rojo);
+    font-weight: 700;
+}
+
+.entrada-descripcion {
+    max-width: 65ch;
+    margin-top: 0.375rem;
+    font-size: 0.9375rem;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.entrada--hecha .entrada-titulo {
+    color: var(--lapiz);
+    font-weight: 500;
+}
+
+.entrada--hecha .sigla {
+    color: var(--lapiz);
+}
+
+.entrada-plegar {
+    padding: 0;
+    background: none;
+    border: 0;
+    text-align: left;
+}
+
+.entrada-plegar .icono {
+    margin-left: 0.25rem;
+    vertical-align: -0.15em;
+    transition: rotate 0.15s;
+}
+
+.entrada-plegar[aria-expanded="true"] .icono {
+    rotate: 180deg;
+}
+
+.entrada-acciones {
+    display: flex;
+    grid-row: 2;
+    grid-column: 1 / -1;
+    margin-left: -0.5rem;
+}
+
+.entrada-acciones .btn-icono {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+/* El tic: se rellena con boli azul al marcar */
+.tic {
+    display: grid;
+    grid-row: 1;
+    grid-column: 2;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 50%;
+}
+
+.tic-circulo {
+    display: grid;
+    place-items: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 2px solid var(--lapiz);
+    border-radius: 50%;
+    color: transparent;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+@media (hover: hover) {
+    .tic:hover .tic-circulo {
+        border-color: var(--azul);
+        color: var(--azul);
+    }
+}
+
+.tic[aria-pressed="true"] .tic-circulo {
+    background: var(--azul);
+    border-color: var(--azul);
+    color: var(--sobre-azul);
+}
+
+.tic--recien .tic-circulo {
+    animation: sello 0.3s ease-out;
+}
+
+.tic--recien .icono path {
+    stroke-dasharray: 24;
+    animation: trazo 0.3s ease-out both;
+}
+
+@keyframes sello {
+    40% { scale: 1.18; }
+}
+
+@keyframes trazo {
+    from { stroke-dashoffset: -24; }
+    to { stroke-dashoffset: 0; }
+}
+
+/* ===== Calendario ===== */
+.calendario {
+    margin-bottom: 1.75rem;
+}
+
+.calendario-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.625rem 0.625rem 0.625rem 1rem;
+}
+
+.calendario-mes {
+    flex: 1;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-stretch: 75%;
+    line-height: 1.2;
+}
+
+.calendario-cabecera .btn {
+    margin-right: 0.25rem;
+}
+
+.semana,
+.rejilla {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.semana {
+    padding: 0.3rem 0;
+    border-top: 1px solid var(--raya);
+    color: var(--lapiz);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.celda {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    min-height: 3.75rem;
+    padding: 0.375rem 0.3rem;
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--raya);
+    border-left: 1px solid var(--raya);
+    border-radius: 0;
+    text-align: left;
+}
+
+.celda:nth-child(7n + 1) {
+    border-left: 0;
+}
+
+button.celda:hover {
+    background: var(--mesa);
+}
+
+.celda[aria-pressed="true"] {
+    box-shadow: inset 0 0 0 2px var(--tinta);
+}
+
+.celda:focus-visible {
+    outline-offset: -2px;
+}
+
+.celda-num {
+    padding: 0.05rem 0.25rem;
+    border-radius: 2px;
+    font-size: 1.375rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
+.celda--finde .celda-num {
+    color: var(--lapiz);
+}
+
+.celda--examen .celda-num {
+    color: var(--rojo);
+}
+
+.celda--hoy .celda-num {
+    background: var(--fluor);
+    color: var(--sobre-fluor);
+}
+
+/* En pantallas estrechas cada tarea es una rayita; en anchas, su sigla y su título */
+.marca {
+    width: 100%;
+    height: 4px;
+    overflow: hidden;
+    background: var(--tinta);
+    border-radius: 2px;
+    font-size: 0;
+}
+
+.marca--examen {
+    background: var(--rojo);
+}
+
+.marca--hecha {
+    background: var(--raya);
+}
+
+.celda-resto {
+    color: var(--lapiz);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* ===== Vacío ===== */
+.vacio {
+    display: grid;
+    justify-items: center;
+    gap: 1.5rem;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+}
+
+.vacio-texto {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    max-width: 26rem;
+}
+
+.vacio-titulo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-stretch: 75%;
+    line-height: 1.2;
+}
+
+.vacio-texto p {
+    color: var(--lapiz);
+}
+
+.vacio-texto .btn {
+    margin-top: 0.5rem;
+}
+
+.pie {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--raya);
+}
+
+/* ===== Diálogos y formularios ===== */
+.dialogo {
+    width: min(32rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 0;
+    overflow-y: auto;
+    background: var(--papel);
+    color: var(--tinta);
+    border: 1px solid var(--raya);
+    border-radius: 8px;
+}
+
+.dialogo--corto {
+    width: min(25rem, calc(100vw - 2rem));
+}
+
+.dialogo::backdrop {
+    background: rgb(15 17 30 / 0.6);
+}
+
+.dialogo-dentro {
+    display: grid;
+    gap: 1.125rem;
+    padding: 1.5rem;
+}
+
+.dialogo-titulo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-stretch: 75%;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.dialogo-lema {
+    margin-top: 0.375rem;
+    color: var(--lapiz);
+}
+
+.dialogo-botones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.625rem;
+    margin-top: 0.25rem;
+}
+
+.campo {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.campos-fila {
+    display: grid;
+    gap: 1.125rem;
+}
+
+.campo-rotulo {
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.campo-opcional,
+.campo-ayuda {
+    color: var(--lapiz);
+    font-size: 0.875rem;
+    font-weight: 400;
+}
+
+.campo-error {
+    color: var(--rojo);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.65rem;
+    background: var(--papel);
+    border: 1px solid var(--lapiz);
+    border-radius: var(--radio);
+}
+
+.campo textarea {
+    min-height: 5rem;
+    resize: vertical;
+}
+
+.campo ::placeholder {
+    color: var(--lapiz);
+    opacity: 0.75;
+}
+
+.segmento .campo-rotulo {
+    margin-bottom: 0.3rem;
+}
+
+.segmento-opciones {
+    display: flex;
+    min-height: 2.75rem;
+    border: 1px solid var(--lapiz);
+    border-radius: var(--radio);
+}
+
+.segmento-opciones label {
+    position: relative;
+    display: grid;
+    flex: 1;
+    place-items: center;
+    padding: 0.4rem 0.75rem;
+    color: var(--lapiz);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.segmento-opciones label + label {
+    border-left: 1px solid var(--lapiz);
+}
+
+.segmento-opciones label:has(:checked) {
+    background: var(--tinta);
+    color: var(--papel);
+}
+
+.segmento-opciones label:has(:focus-visible) {
+    z-index: 1;
+    outline: 2px solid var(--azul);
+    outline-offset: 2px;
+}
+
+.recientes {
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--raya);
+}
+
+.recientes-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* ===== Avisos ===== */
+.avisos {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    z-index: 20;
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+    width: max-content;
+    max-width: calc(100vw - 2rem);
+    translate: -50% 0;
+    pointer-events: none;
+}
+
+.aviso {
+    padding: 0.625rem 1rem;
+    background: var(--tinta);
+    color: var(--papel);
+    border-radius: var(--radio);
+    font-weight: 600;
+    animation: aviso 0.2s ease-out;
+}
+
+.aviso--error {
+    background: var(--rojo);
+    color: var(--sobre-rojo);
+}
+
+@keyframes aviso {
+    from {
+        opacity: 0;
+        translate: 0 0.5rem;
+    }
+}
+
+/* ===== Cambio de curso: las tareas pasan de lado, como una hoja ===== */
+/* Solo se anima la zona de tareas. Con la raíz dentro de la transición, o con su
+   capa recogiendo los clics, la página entera dejaría de responder mientras dura. */
+:root {
+    view-transition-name: none;
+}
+
+::view-transition {
+    pointer-events: none;
+}
+
+#vista {
+    view-transition-name: vista;
+}
+
+::view-transition-old(vista) {
+    animation: 0.12s ease-in both sale;
+}
+
+::view-transition-new(vista) {
+    animation: 0.2s ease-out both entra;
+}
+
+@keyframes sale {
+    to {
+        opacity: 0;
+        translate: calc(var(--giro) * -1.5rem) 0;
+    }
+}
+
+@keyframes entra {
+    from {
+        opacity: 0;
+        translate: calc(var(--giro) * 1.5rem) 0;
+    }
+}
+
+/* ===== Pantallas medianas ===== */
+@media (max-width: 59.99rem) {
+    /* En la tira de asignaturas solo cabe la sigla; el nombre sigue ahí para los lectores de pantalla */
+    .asignatura-sigla + .asignatura-nombre {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
+@media (min-width: 40rem) {
+    .cursos {
+        order: 0;
+        width: auto;
+    }
+
+    .curso {
+        flex: none;
+    }
+
+    .cuerpo {
+        padding-bottom: 3rem;
+    }
+
+    #btn-nueva {
+        position: static;
+        min-height: 2.5rem;
+        margin-bottom: 0.5rem;
+        padding-inline: 0.95rem;
+        box-shadow: none;
+    }
+
+    .avisos {
+        bottom: 1.5rem;
+    }
+
+    .dia {
+        grid-template-columns: 5.5rem minmax(0, 1fr);
+    }
+
+    .hoja-num {
+        font-size: 3.25rem;
+    }
+
+    .entrada {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        padding-left: 1.125rem;
+    }
+
+    .entrada-acciones {
+        grid-row: 1;
+        grid-column: 2;
+        margin: 0.25rem 0.25rem 0 0.5rem;
+    }
+
+    .tic {
+        grid-column: 3;
+    }
+
+    .campos-fila {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .vacio {
+        grid-template-columns: auto minmax(0, 26rem);
+        align-items: center;
+        justify-content: center;
+        justify-items: start;
+        gap: 3rem;
+        padding: 3.5rem 2rem;
+        text-align: left;
+    }
+
+    .vacio-texto {
+        justify-items: start;
+    }
+
+    .hoja--grande {
+        padding-right: 3rem;
+        border-right: 1px solid var(--raya);
+    }
+}
+
+@media (min-width: 48rem) {
+    .celda {
+        align-items: stretch;
+        gap: 2px;
+        min-height: 6.75rem;
+        padding: 0.375rem 0.4rem;
+    }
+
+    .celda-num {
+        align-self: flex-start;
+        margin-bottom: 2px;
+        font-size: 1.625rem;
+    }
+
+    .marca {
+        height: auto;
+        background: none;
+        border-radius: 0;
+        font-size: 0.75rem;
+        line-height: 1.3;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .marca b {
+        font-weight: 700;
+        font-stretch: 80%;
+    }
+
+    .marca--examen {
+        color: var(--rojo);
+        font-weight: 600;
+    }
+
+    .marca--hecha {
+        color: var(--lapiz);
+        text-decoration: line-through;
+    }
+}
+
+/* ===== Pantallas anchas: asignaturas en columna ===== */
+@media (min-width: 60rem) {
+    .cabecera {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+    }
+
+    .cuerpo {
+        grid-template-columns: 15rem minmax(0, 1fr);
+        align-items: start;
+        gap: 2.5rem;
+        padding-top: 1.75rem;
+    }
+
+    .asignaturas {
+        position: sticky;
+        top: 5.25rem;
+        flex-direction: column;
+        gap: 1px;
+        margin: 0;
+        padding: 0;
+        overflow: visible;
+    }
+
+    .asignatura {
+        display: grid;
+        grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+        gap: 0.25rem;
+        padding: 0.5rem 0.625rem;
+        background: none;
+        border: 0;
+        font-weight: 500;
+    }
+
+    /* «Todas» no lleva sigla: su nombre ocupa las dos columnas */
+    .asignatura-nombre:nth-child(2) {
+        grid-column: 1 / 3;
+    }
+
+    .asignatura:hover:not(:has(:checked)) {
+        background: var(--papel);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+@media print {
+    .cabecera-lado,
+    .asignaturas,
+    .barra,
+    .entrada-acciones,
+    .pie,
+    .avisos {
+        display: none !important;
+    }
+}

@@ -1,0 +1,22 @@
+rules_version = '2';
+
+// Reglas de Firestore que necesita semiDAM.
+// Se publican en Firebase Console > Firestore Database > Reglas.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Tareas y exámenes. Cualquiera que abra la web puede leerlos y cambiarlos:
+    // la app no usa Firebase Authentication, así que las reglas no saben quién escribe.
+    match /tareas/{tarea} {
+      allow read, write: if true;
+    }
+
+    // Registro de usuarios: nombre y rol. No se pueden borrar desde la web.
+    match /usuarios/{usuario} {
+      allow read: if true;
+      allow create, update: if request.resource.data.nombre is string
+                            && request.resource.data.nombre.size() <= 40
+                            && request.resource.data.rol in ['admin', 'estudiante'];
+    }
+  }
+}
