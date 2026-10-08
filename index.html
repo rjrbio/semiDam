@@ -130,6 +130,11 @@
             </div>
 
             <label class="campo">
+                <span class="campo-rotulo"><span id="tarea-enlace">Enlace a la tarea</span> <span class="campo-opcional">(opcional)</span></span>
+                <input type="text" name="enlace" inputmode="url" maxlength="500" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="https://…">
+            </label>
+
+            <label class="campo">
                 <span class="campo-rotulo">Descripción <span class="campo-opcional">(opcional)</span></span>
                 <textarea name="descripcion" rows="3" maxlength="500"></textarea>
             </label>
@@ -137,6 +142,21 @@
             <div class="dialogo-botones">
                 <button type="button" class="btn btn-secundario" data-accion="cancelar">Cancelar</button>
                 <button type="submit" id="tarea-boton" class="btn btn-primario">Añadir tarea</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog id="dlg-asignaturas" class="dialogo dialogo--ancho" aria-labelledby="asignaturas-titulo">
+        <form id="form-asignaturas" class="dialogo-dentro">
+            <div>
+                <h2 id="asignaturas-titulo" class="dialogo-titulo">Mis asignaturas</h2>
+                <p class="dialogo-lema">Marca las que cursas. En «Mías» verás solo sus tareas y exámenes.</p>
+            </div>
+            <div id="asignaturas-opciones" class="elegir"></div>
+            <p id="asignaturas-error" class="campo-error" role="alert" hidden>Marca al menos una asignatura.</p>
+            <div class="dialogo-botones">
+                <button type="button" class="btn btn-secundario" data-accion="cancelar">Cancelar</button>
+                <button type="submit" class="btn btn-primario">Guardar</button>
             </div>
         </form>
     </dialog>

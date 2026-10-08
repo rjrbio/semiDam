@@ -7,7 +7,8 @@ Web: https://rjrbio.github.io/semiDam/
 
 ## Qué hace
 
-- **Dos cursos.** El selector 1º / 2º de la cabecera cambia de curso sin salir de la página; cada uno tiene sus asignaturas y sus tareas. El curso elegido se recuerda en cada navegador.
+- **Dos cursos.** El selector 1º / 2º / Ambos / Mías de la cabecera cambia lo que se ve sin salir de la página. Cada curso tiene sus asignaturas y sus tareas, y «Ambos» las junta todas. La opción elegida se recuerda en cada navegador.
+- **Mis asignaturas.** Cada persona marca las asignaturas que cursa, de cualquiera de los dos años, y en «Mías» ve solo sus tareas, sus exámenes y sus contadores. Se guardan con su usuario, así que le siguen del móvil al ordenador. Los demás cursos siguen enseñándolo todo.
 - **Lista por fechas.** Las tareas se agrupan en «Se pasó la fecha», «Hoy», «Mañana», «Esta semana», «La semana que viene» y «Más adelante». Lo que ya has hecho y cuya fecha ha pasado se recoge en «Ya hecho».
 - **Calendario** mensual, de lunes a domingo. Al pulsar un día se ven sus tareas debajo.
 - **Archivadas**: lo que los administradores retiran de la lista, agrupado por meses.
@@ -16,7 +17,7 @@ Web: https://rjrbio.github.io/semiDam/
 - **Tiempo real y sin conexión.** Los cambios llegan a todos sin recargar. Si no hay red se ve lo último guardado y lo que marques se envía al recuperarla.
 - **Tema claro y oscuro.**
 
-Los administradores, además, pueden añadir, editar, archivar y eliminar tareas, y descargar una copia en JSON.
+Los administradores, además, pueden añadir, editar, archivar y eliminar tareas, y descargar una copia en JSON. Cada tarea puede llevar un enlace: el nombre de la plataforma se convierte entonces en el botón que la abre.
 
 ## Estructura
 
@@ -60,8 +61,8 @@ Todo está en `js/config.js`:
 
 | Colección | Documento | Campos |
 | --- | --- | --- |
-| `tareas` | uno por tarea o examen | `titulo`, `tipo` (`tarea` o `examen`), `curso` (1 o 2), `asignatura`, `fecha` (AAAA-MM-DD), `plataforma`, `descripcion`, `archivada`, `progresoUsuarios` (nombre → `true`/`false`), `fechaCreacion`, `fechaModificacion` |
-| `usuarios` | uno por persona; el id es su nombre en minúsculas | `nombre`, `rol` (`admin` o `estudiante`), `ultimoAcceso` |
+| `tareas` | uno por tarea o examen | `titulo`, `tipo` (`tarea` o `examen`), `curso` (1 o 2), `asignatura`, `fecha` (AAAA-MM-DD), `plataforma`, `enlace` (opcional), `descripcion`, `archivada`, `progresoUsuarios` (nombre → `true`/`false`), `fechaCreacion`, `fechaModificacion` |
+| `usuarios` | uno por persona; el id es su nombre en minúsculas | `nombre`, `rol` (`admin` o `estudiante`), `asignaturas` (lista con los nombres de las que cursa, si las ha elegido), `ultimoAcceso` |
 
 Las tareas anteriores al selector de curso no tienen el campo `curso`: se les asigna el de su asignatura y, si no se reconoce, primero.
 

@@ -1,11 +1,15 @@
 // semiDAM: arranque, eventos y acciones.
 
 import { CURSOS, PLATAFORMAS, ADMINISTRADORES } from './config.js';
-import { estado, esAdmin, cursoDeTarea, estaHecha, buscarTarea } from './estado.js';
+import {
+    AMBOS, MIAS, estado, esAdmin, cursoElegido, misAsignaturas, aLaVista,
+    cursoDeAsignatura, cursoDeTarea, estaHecha, buscarTarea,
+} from './estado.js';
 import * as memoria from './memoria.js';
+import { limpiarEnlace } from './enlaces.js';
 import { hoyISO } from './fechas.js';
 import { icono } from './iconos.js';
-import { htmlCursos, htmlAsignaturas, htmlVista } from './vistas.js';
+import { htmlCursos, htmlAsignaturas, htmlElegirAsignaturas, htmlVista } from './vistas.js';
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -127,16 +131,18 @@ function enviar(promesa) {
 }
 
 function cambiarCurso(id) {
-    if (id === estado.curso) return;
+    const anterior = cursoElegido();
+    if (id === anterior) return;
     const cambiar = () => {
         estado.curso = id;
         estado.asignatura = null;
         memoria.guardarCurso(id);
         pintar();
     };
-    // Las tareas pasan de lado como al cambiar de hoja, hacia donde está el curso elegido.
+    // Las tareas pasan de lado como al cambiar de hoja, hacia donde está la opción elegida.
     const animar = document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.documentElement.dataset.giro = id > estado.curso ? 'adelante' : 'atras';
+    const orden = [...CURSOS.map((curso) => curso.id), AMBOS, MIAS];
+    document.documentElement.dataset.giro = orden.indexOf(id) > orden.indexOf(anterior) ? 'adelante' : 'atras';
     if (animar) document.startViewTransition(cambiar);
     else cambiar();
 }
@@ -177,6 +183,7 @@ function rotularFormulario() {
     const examen = $('#form-tarea').elements.tipo.value === 'examen';
     $('#tarea-titulo').textContent = `${editando ? 'Editar' : examen ? 'Nuevo' : 'Nueva'} ${examen ? 'examen' : 'tarea'}`;
     $('#tarea-fecha').textContent = examen ? 'Fecha del examen' : 'Fecha de entrega';
+    $('#tarea-enlace').textContent = examen ? 'Enlace al examen' : 'Enlace a la tarea';
     $('#tarea-boton').textContent = editando ? 'Guardar cambios' : examen ? 'Añadir examen' : 'Añadir tarea';
 }
 
@@ -189,10 +196,15 @@ function abrirFormulario(tarea = null) {
 
     campos.titulo.value = tarea?.titulo ?? '';
     campos.tipo.value = tarea?.tipo ?? 'tarea';
-    campos.curso.value = String(tarea ? cursoDeTarea(tarea) : estado.curso);
+    // Con «Ambos» y «Mías» no hay un curso elegido: se propone el de la asignatura filtrada o, si no, primero.
+    const elegido = cursoElegido();
+    const cursoNueva = CURSOS.some((curso) => curso.id === elegido) ? elegido : cursoDeAsignatura(estado.asignatura);
+    campos.curso.value = String(tarea ? cursoDeTarea(tarea) : cursoNueva);
     rellenarAsignaturas(tarea?.asignatura ?? estado.asignatura);
     campos.fecha.value = tarea?.fecha ?? (estado.vista === 'calendario' ? estado.dia ?? '' : '');
     rellenar(campos.plataforma, PLATAFORMAS, tarea?.plataforma ?? PLATAFORMAS[0]);
+    campos.enlace.value = tarea?.enlace ?? '';
+    campos.enlace.setCustomValidity('');
     campos.descripcion.value = tarea?.descripcion ?? '';
     rotularFormulario();
     $('#dlg-tarea').showModal();
@@ -208,11 +220,17 @@ function guardarFormulario(evento) {
         asignatura: campos.asignatura.value,
         fecha: campos.fecha.value,
         plataforma: campos.plataforma.value,
+        enlace: limpiarEnlace(campos.enlace.value),
         descripcion: campos.descripcion.value.trim(),
     };
     if (!datos.titulo) {
         campos.titulo.value = '';
         campos.titulo.reportValidity();
+        return;
+    }
+    if (campos.enlace.value.trim() && !datos.enlace) {
+        campos.enlace.setCustomValidity('Escribe una dirección web, por ejemplo https://…');
+        campos.enlace.reportValidity();
         return;
     }
 
@@ -221,11 +239,64 @@ function guardarFormulario(evento) {
         avisar('Cambios guardados');
     } else {
         enviar(db.crearTarea(datos));
+        // Si la tarea no entra en lo que se está viendo, el aviso dice a qué curso ha ido a parar.
         const curso = CURSOS.find((otro) => otro.id === datos.curso);
-        const enOtroCurso = curso && curso.id !== estado.curso ? ` en ${curso.ordinal}` : '';
-        avisar(`${datos.tipo === 'examen' ? 'Examen añadido' : 'Tarea añadida'}${enOtroCurso}`);
+        avisar(`${datos.tipo === 'examen' ? 'Examen añadido' : 'Tarea añadida'}${curso && !aLaVista(datos) ? ` en ${curso.ordinal}` : ''}`);
     }
     $('#dlg-tarea').close();
+}
+
+// ========================================
+// Mis asignaturas
+// ========================================
+
+/** Tras cada cambio en las casillas: el botón de cada curso y el aviso de que falta marcar alguna. */
+function repasarCasillas() {
+    for (const grupo of document.querySelectorAll('.elegir-curso')) {
+        const todas = [...grupo.querySelectorAll('input')].every((casilla) => casilla.checked);
+        grupo.querySelector('[data-accion="marcar-curso"]').textContent = todas ? 'Quitar todas' : 'Marcar todas';
+    }
+    if ($('#form-asignaturas input:checked')) $('#asignaturas-error').hidden = true;
+}
+
+function abrirAsignaturas() {
+    $('#asignaturas-opciones').innerHTML = htmlElegirAsignaturas();
+    $('#asignaturas-error').hidden = true;
+    repasarCasillas();
+    $('#dlg-asignaturas').showModal();
+}
+
+function guardarAsignaturas(evento) {
+    evento.preventDefault();
+    const elegidas = [...evento.target.querySelectorAll('input[name="asignatura"]:checked')].map((casilla) => casilla.value);
+    $('#asignaturas-error').hidden = elegidas.length > 0;
+    if (!elegidas.length) return;
+
+    const usuario = estado.usuario;
+    usuario.asignaturas = elegidas;
+    memoria.guardarSesion(usuario);
+    estado.curso = MIAS;
+    estado.asignatura = null;
+    memoria.guardarCurso(MIAS);
+    $('#dlg-asignaturas').close();
+    pintar();
+    avisar('Asignaturas guardadas');
+
+    // En Firestore, para que le sigan a otros dispositivos; si no se puede, se quedan en este.
+    const { nombre, rol } = usuario;
+    cargaDeFirestore
+        .then(() => db.guardarUsuario(claveDe(nombre), { nombre, rol, asignaturas: elegidas }))
+        .catch(() => avisar('Guardadas solo en este dispositivo'));
+}
+
+/** Cambia lo que se ve. Si pide «Mías» y aún no las ha elegido, primero se le preguntan. */
+function elegirCurso(valor) {
+    if (valor === MIAS && !misAsignaturas().size) {
+        $(`input[name="ver-curso"][value="${cursoElegido()}"]`).checked = true;
+        abrirAsignaturas();
+        return;
+    }
+    cambiarCurso(valor === AMBOS || valor === MIAS ? valor : Number(valor));
 }
 
 // ========================================
@@ -233,6 +304,7 @@ function guardarFormulario(evento) {
 // ========================================
 
 const esRol = (rol) => rol === 'admin' || rol === 'estudiante';
+const listaDeNombres = (valor) => (Array.isArray(valor) ? valor.filter((nombre) => typeof nombre === 'string') : []);
 const limpiarNombre = (texto) => texto.replace(/[\u0000-\u001f\u007f/]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
 
 // «Pepe», «pepe» y «PEPE» son la misma persona: comparten clave en Firestore.
@@ -259,8 +331,9 @@ async function leerUsuario(clave) {
 /** Registra al usuario la primera vez y, después, anota cada acceso. */
 function anotarAcceso(clave, remoto) {
     if (remoto === undefined) return;
-    const { nombre, rol } = estado.usuario;
-    db.guardarUsuario(clave, remoto ? {} : { nombre, rol }).catch(() => { /* la sesión sigue en este navegador */ });
+    const { nombre, rol, asignaturas } = estado.usuario;
+    const alta = asignaturas.length ? { nombre, rol, asignaturas } : { nombre, rol };
+    db.guardarUsuario(clave, remoto ? {} : alta).catch(() => { /* la sesión sigue en este navegador */ });
 }
 
 /**
@@ -319,7 +392,11 @@ async function entrar(texto) {
     boton.disabled = false;
     boton.textContent = 'Entrar';
 
-    estado.usuario = { nombre, rol: esRol(remoto?.rol) ? remoto.rol : rolInicial(nombre) };
+    estado.usuario = {
+        nombre,
+        rol: esRol(remoto?.rol) ? remoto.rol : rolInicial(nombre),
+        asignaturas: listaDeNombres(remoto?.asignaturas),
+    };
     memoria.guardarSesion(estado.usuario);
     $('#dlg-entrar').close();
     pintar();
@@ -333,6 +410,7 @@ async function sincronizarUsuario() {
     const remoto = await leerUsuario(clave);
     if (estado.usuario !== usuario) return;
     if (esRol(remoto?.rol)) usuario.rol = remoto.rol;
+    if (Array.isArray(remoto?.asignaturas)) usuario.asignaturas = listaDeNombres(remoto.asignaturas);
     memoria.guardarSesion(usuario);
     pintar();
     anotarAcceso(clave, remoto);
@@ -445,6 +523,17 @@ const acciones = {
         control.closest('dialog').close();
     },
 
+    'mis-asignaturas'() {
+        abrirAsignaturas();
+    },
+
+    'marcar-curso'(control) {
+        const casillas = [...control.closest('.elegir-curso').querySelectorAll('input')];
+        const todas = casillas.every((casilla) => casilla.checked);
+        for (const casilla of casillas) casilla.checked = !todas;
+        repasarCasillas();
+    },
+
     tema() {
         const tema = document.documentElement.dataset.tema === 'oscuro' ? 'claro' : 'oscuro';
         memoria.guardarTema(tema);
@@ -463,7 +552,7 @@ function escucharEventos() {
 
     document.addEventListener('change', ({ target }) => {
         if (target.name === 'ver-curso') {
-            cambiarCurso(Number(target.value));
+            elegirCurso(target.value);
         } else if (target.name === 'ver-asignatura') {
             estado.asignatura = target.value || null;
             pintar();
@@ -484,6 +573,14 @@ function escucharEventos() {
         if (target.name === 'curso') rellenarAsignaturas(null);
         if (target.name === 'tipo') rotularFormulario();
     });
+    // El aviso de «dirección no válida» se retira en cuanto se corrige; si no, bloquearía el envío.
+    formulario.addEventListener('input', ({ target }) => {
+        if (target.name === 'enlace') target.setCustomValidity('');
+    });
+
+    const formularioAsignaturas = $('#form-asignaturas');
+    formularioAsignaturas.addEventListener('submit', guardarAsignaturas);
+    formularioAsignaturas.addEventListener('change', repasarCasillas);
 
     $('#form-entrar').addEventListener('submit', (evento) => {
         evento.preventDefault();
@@ -514,18 +611,22 @@ async function iniciar() {
         hueco.insertAdjacentHTML('afterbegin', icono(hueco.dataset.icono, Number(hueco.dataset.lado) || 18));
     }
     $('#tarea-cursos').innerHTML = CURSOS.map((curso) =>
-        `<label><input type="radio" name="curso" value="${curso.id}">${curso.ordinal}</label>`).join('');
+        `<label><input type="radio" name="curso" value="${curso.id}" required>${curso.ordinal}</label>`).join('');
     ponerTema(document.documentElement.dataset.tema);
 
     const hoy = new Date();
     estado.mes = { anio: hoy.getFullYear(), mes: hoy.getMonth() };
     estado.dia = hoyISO();
     const cursoGuardado = memoria.leerCurso();
-    if (CURSOS.some((curso) => curso.id === cursoGuardado)) estado.curso = cursoGuardado;
+    if ([AMBOS, MIAS].includes(cursoGuardado) || CURSOS.some((curso) => curso.id === cursoGuardado)) estado.curso = cursoGuardado;
 
     const sesion = memoria.leerSesion();
     if (sesion) {
-        estado.usuario = { nombre: sesion.nombre, rol: esRol(sesion.rol) ? sesion.rol : rolInicial(sesion.nombre) };
+        estado.usuario = {
+            nombre: sesion.nombre,
+            rol: esRol(sesion.rol) ? sesion.rol : rolInicial(sesion.nombre),
+            asignaturas: listaDeNombres(sesion.asignaturas),
+        };
     }
 
     escucharEventos();

@@ -1,7 +1,10 @@
 // Vistas: convierten el estado en HTML. No tocan el DOM ni guardan nada.
 
 import { CURSOS } from './config.js';
-import { estado, esAdmin, cursoActual, siglaDe, estaHecha, tareasDelCurso, filtrarAsignatura } from './estado.js';
+import {
+    AMBOS, MIAS, estado, esAdmin, cursoElegido, cursosVisibles, misAsignaturas,
+    ordinalDe, siglaDe, estaHecha, tareasDelCurso, filtrarAsignatura,
+} from './estado.js';
 import { SEMANA, aISO, hoyISO, sumarDias, domingoDe, partes, nombreMes, plazo } from './fechas.js';
 import { icono } from './iconos.js';
 
@@ -32,17 +35,30 @@ function contar(tareas) {
     return trozos.join(' y ');
 }
 
+/** Para completar frases: «en 1º», «en 1º y 2º», «en tus asignaturas» o «de Bases de datos». */
+function ambito() {
+    if (estado.asignatura) return `de ${escapar(estado.asignatura)}`;
+    if (cursoElegido() === MIAS) return 'en tus asignaturas';
+    return `en ${cursosVisibles().map((curso) => escapar(curso.ordinal)).join(' y ')}`;
+}
+
 // ========================================
 // Selectores: curso y asignatura
 // ========================================
 
 export function htmlCursos() {
-    return CURSOS.map((curso) => `
+    const elegido = cursoElegido();
+    const opcion = (valor, contenido) => `
         <label class="curso">
-            <input type="radio" name="ver-curso" value="${curso.id}" data-foco="curso:${curso.id}"${curso.id === estado.curso ? ' checked' : ''}>
+            <input type="radio" name="ver-curso" value="${valor}" data-foco="curso:${valor}"${valor === elegido ? ' checked' : ''}>
+            ${contenido}
+        </label>`;
+
+    return CURSOS.map((curso) => opcion(curso.id, `
             <span class="curso-ordinal">${escapar(curso.ordinal)}</span>
-            <span class="curso-nombre">${escapar(curso.nombre)}</span>
-        </label>`).join('');
+            <span class="curso-nombre">${escapar(curso.nombre)}</span>`)).join('')
+        + opcion(AMBOS, '<span class="curso-ordinal curso-ordinal--palabra">Ambos</span>')
+        + opcion(MIAS, '<span class="curso-ordinal curso-ordinal--palabra">Mías</span><span class="oculto-visual">: mis asignaturas</span>');
 }
 
 export function htmlAsignaturas() {
@@ -57,9 +73,39 @@ export function htmlAsignaturas() {
             ${cuenta ? `<span class="asignatura-cuenta">${cuenta}<span class="oculto-visual"> sin hacer</span></span>` : ''}
         </label>`;
 
+    // Si se ven asignaturas de más de un curso, cada grupo lleva delante el suyo.
+    const cursos = cursosVisibles();
     return opcion('', '', 'Todas', total)
-        + cursoActual().asignaturas.map((asignatura) =>
-            opcion(asignatura.nombre, asignatura.sigla, asignatura.nombre, sinHacer.get(asignatura.nombre)?.length ?? 0)).join('');
+        + cursos.map((curso) =>
+            (cursos.length > 1 ? `<span class="asignaturas-curso">${escapar(curso.ordinal)}</span>` : '')
+            + curso.asignaturas.map((asignatura) =>
+                opcion(asignatura.nombre, asignatura.sigla, asignatura.nombre, sinHacer.get(asignatura.nombre)?.length ?? 0)).join('')).join('')
+        + (cursoElegido() === MIAS ? `
+        <button type="button" class="asignaturas-cambiar" data-accion="mis-asignaturas" data-foco="mis-asignaturas" title="Cambiar mis asignaturas">
+            ${icono('list-checks')}<span>Cambiar mis asignaturas</span>
+        </button>` : '');
+}
+
+/** Casillas del diálogo «Mis asignaturas», un bloque por curso. */
+export function htmlElegirAsignaturas() {
+    const mias = misAsignaturas();
+    const elegido = cursoElegido();
+    // La primera vez se proponen las del curso que se está viendo.
+    const marcada = (curso, asignatura) => (mias.size ? mias.has(asignatura.nombre) : curso.id === elegido);
+
+    return CURSOS.map((curso) => `
+        <div class="elegir-curso" role="group" aria-labelledby="elegir-curso-${curso.id}">
+            <div class="elegir-cabecera">
+                <h3 id="elegir-curso-${curso.id}" class="elegir-titulo"><span class="elegir-ordinal">${escapar(curso.ordinal)}</span> ${escapar(curso.nombre)}</h3>
+                <button type="button" class="btn-texto" data-accion="marcar-curso"></button>
+            </div>
+            ${curso.asignaturas.map((asignatura) => `
+            <label class="elegir-opcion">
+                <input type="checkbox" name="asignatura" value="${escapar(asignatura.nombre)}"${marcada(curso, asignatura) ? ' checked' : ''}>
+                <span class="sigla">${escapar(asignatura.sigla)}</span>
+                <span>${escapar(asignatura.nombre)}</span>
+            </label>`).join('')}
+        </div>`).join('');
 }
 
 // ========================================
@@ -84,6 +130,14 @@ function htmlEntrada(tarea) {
     const hecha = estaHecha(tarea);
     // Lo ya hecho se muestra en una línea; se despliega al pulsar el título.
     const plegada = hecha && !estado.abiertas.has(tarea.id);
+    const deCurso = cursosVisibles().length > 1 ? ` de ${escapar(ordinalDe(tarea))}` : '';
+
+    // Si la tarea lleva enlace, el nombre de la plataforma es el que lo abre.
+    let lugar = tarea.plataforma ? `, en ${escapar(tarea.plataforma)}` : '';
+    if (tarea.enlace) {
+        const enlace = `<a class="entrada-enlace" href="${escapar(tarea.enlace)}" target="_blank" rel="noopener noreferrer">${escapar(tarea.plataforma || 'abrir enlace')}${icono('external-link', 14)}<span class="oculto-visual"> (se abre en otra pestaña)</span></a>`;
+        lugar = tarea.plataforma ? `, en ${enlace}` : `, ${enlace}`;
+    }
 
     const clases = ['entrada'];
     if (examen) clases.push('entrada--examen');
@@ -102,7 +156,7 @@ function htmlEntrada(tarea) {
                         : titulo}
                 </h3>
                 ${plegada ? '' : `
-                <p class="entrada-meta">${examen ? '<strong>Examen</strong>' : 'Tarea'} de ${escapar(tarea.asignatura)}${tarea.plataforma ? `, en ${escapar(tarea.plataforma)}` : ''}</p>
+                <p class="entrada-meta">${examen ? '<strong>Examen</strong>' : 'Tarea'} de ${escapar(tarea.asignatura)}${deCurso}${lugar}</p>
                 ${tarea.descripcion ? `<p class="entrada-descripcion">${escapar(tarea.descripcion)}</p>` : ''}`}
             </div>
             ${esAdmin() ? `
@@ -146,10 +200,9 @@ function htmlDias(tareas, hoy, conPlazo = true) {
 
 function htmlResumen(tareas) {
     const sinHacer = tareas.filter((tarea) => !estaHecha(tarea));
-    const donde = estado.asignatura ? `de ${escapar(estado.asignatura)}` : `en ${escapar(cursoActual().ordinal)}`;
     const frase = sinHacer.length
-        ? `${sinHacer.length === 1 ? 'Te queda' : 'Te quedan'} ${contar(sinHacer)} ${donde}.`
-        : `No te queda nada por hacer ${donde}.`;
+        ? `${sinHacer.length === 1 ? 'Te queda' : 'Te quedan'} ${contar(sinHacer)} ${ambito()}.`
+        : `No te queda nada por hacer ${ambito()}.`;
     return `<p class="resumen">${frase}</p>`;
 }
 
@@ -290,27 +343,21 @@ function htmlArchivadas() {
 // ========================================
 
 function htmlVacio() {
-    const ordinal = escapar(cursoActual().ordinal);
     const archivo = estado.vista === 'archivadas';
-    let titulo;
+    const titulo = `${archivo ? 'Nada archivado' : 'Nada pendiente'} ${ambito()}`;
     let texto;
     let boton = '';
 
     if (estado.asignatura) {
-        titulo = `${archivo ? 'Nada archivado' : 'Nada pendiente'} de ${escapar(estado.asignatura)}`;
-        texto = `Puede que haya algo en otra asignatura de ${ordinal}.`;
+        texto = 'Puede que haya algo en otra asignatura.';
         boton = '<button type="button" class="btn btn-secundario" data-accion="ver-todas">Ver todas las asignaturas</button>';
     } else if (archivo) {
-        titulo = `Nada archivado en ${ordinal}`;
         texto = 'Lo que se archive deja de salir en la lista y se guarda aquí.';
+    } else if (esAdmin()) {
+        texto = 'Añade la primera tarea o el primer examen para que lo vea toda la clase.';
+        boton = `<button type="button" class="btn btn-primario" data-accion="nueva">${icono('plus')}Nueva tarea</button>`;
     } else {
-        titulo = `Nada pendiente en ${ordinal}`;
-        if (esAdmin()) {
-            texto = 'Añade la primera tarea o el primer examen para que lo vea toda la clase.';
-            boton = `<button type="button" class="btn btn-primario" data-accion="nueva">${icono('plus')}Nueva tarea</button>`;
-        } else {
-            texto = 'Cuando se publique una tarea o un examen, aparecerá aquí.';
-        }
+        texto = 'Cuando se publique una tarea o un examen, aparecerá aquí.';
     }
 
     return `

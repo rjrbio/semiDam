@@ -55,8 +55,7 @@ export const PLATAFORMAS = ['Junta de Andalucía', 'Portada'];
 // administrador (da igual mayúsculas o minúsculas). Después manda el campo
 // `rol` de su documento en la colección `usuarios` de Firestore.
 export const ADMINISTRADORES = [
-    'Administrador',
     'Pepe',
-    'Antonio',
+    'Antonio Trujillo Corrales',
     'Guti',
 ];

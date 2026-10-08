@@ -28,7 +28,7 @@ function borrar(clave) {
     try { localStorage.removeItem(clave); } catch { /* sin almacenamiento */ }
 }
 
-/** @returns {{nombre: string, rol?: string}|null} */
+/** @returns {{nombre: string, rol?: string, asignaturas?: string[]}|null} */
 export function leerSesion() {
     const sesion = json(SESION);
     if (typeof sesion?.nombre === 'string' && sesion.nombre) return sesion;
@@ -36,8 +36,8 @@ export function leerSesion() {
     return antigua ? { nombre: antigua } : null;
 }
 
-export function guardarSesion({ nombre, rol }) {
-    guardar(SESION, { nombre, rol });
+export function guardarSesion({ nombre, rol, asignaturas }) {
+    guardar(SESION, { nombre, rol, asignaturas });
     guardar(RECIENTES, [nombre, ...leerRecientes().filter((otro) => otro !== nombre)].slice(0, MAX_RECIENTES));
 }
 
@@ -60,7 +60,12 @@ export function leerRecientes() {
     return lista.filter((nombre) => typeof nombre === 'string' && nombre).slice(0, MAX_RECIENTES);
 }
 
-export const leerCurso = () => Number(texto(CURSO)) || null;
+/** @returns {number|string|null} el id del curso o, si no es un número, el texto guardado («ambos») */
+export function leerCurso() {
+    const guardado = texto(CURSO);
+    return Number(guardado) || guardado;
+}
+
 export const guardarCurso = (id) => guardar(CURSO, String(id));
 
 /** @returns {'claro'|'oscuro'|null} null si el usuario todavía no ha elegido */

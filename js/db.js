@@ -1,9 +1,9 @@
 // Acceso a Firestore. Es el único módulo que habla con Firebase.
 //
 // Colecciones:
-//   tareas/{id}      titulo, tipo, curso, asignatura, fecha, plataforma, descripcion,
+//   tareas/{id}      titulo, tipo, curso, asignatura, fecha, plataforma, enlace, descripcion,
 //                    archivada, progresoUsuarios { nombre: true|false }, fechaCreacion, fechaModificacion
-//   usuarios/{clave} nombre, rol ('admin' | 'estudiante'), ultimoAcceso
+//   usuarios/{clave} nombre, rol ('admin' | 'estudiante'), asignaturas, ultimoAcceso
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import {
@@ -12,6 +12,7 @@ import {
     serverTimestamp, FieldPath,
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
 import { firebaseConfig } from './config.js';
+import { limpiarEnlace } from './enlaces.js';
 import { esFechaValida } from './fechas.js';
 
 const app = initializeApp(firebaseConfig);
@@ -38,6 +39,7 @@ function aTarea(documento) {
         asignatura: String(datos.asignatura ?? ''),
         fecha: datos.fecha,
         plataforma: String(datos.plataforma ?? ''),
+        enlace: limpiarEnlace(datos.enlace),
         descripcion: String(datos.descripcion ?? ''),
         archivada: datos.archivada === true,
         progresoUsuarios: datos.progresoUsuarios ?? {},

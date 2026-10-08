@@ -298,14 +298,28 @@ button {
     line-height: 1;
 }
 
+/* «Ambos» y «Mías» son palabras, no ordinales: un poco más pequeñas para que pesen lo mismo */
+.curso-ordinal--palabra {
+    font-size: 1.625rem;
+}
+
 .curso-nombre {
     font-size: 0.9375rem;
     font-weight: 600;
 }
 
+.curso + .curso {
+    border-left: 1px solid var(--raya);
+}
+
 .curso:has(:checked) {
     background: var(--tinta);
     color: var(--papel);
+}
+
+.curso:has(:checked),
+.curso:has(:checked) + .curso {
+    border-left-color: var(--tinta);
 }
 
 .curso:has(:focus-visible) {
@@ -396,6 +410,18 @@ button {
     cursor: pointer;
 }
 
+/* El curso que encabeza cada grupo cuando se ven asignaturas de varios */
+.asignaturas-curso {
+    flex: none;
+    align-self: center;
+    padding: 0 0.125rem 0 0.5rem;
+    color: var(--lapiz);
+    font-size: 1.25rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
 .asignatura-sigla {
     font-weight: 700;
     font-stretch: 80%;
@@ -421,6 +447,28 @@ button {
 .asignatura:has(:focus-visible) {
     outline: 2px solid var(--azul);
     outline-offset: 2px;
+}
+
+/* En «Mías», el botón para cambiarlas: al principio de la tira en móvil, al final de la columna en ancho */
+.asignaturas-cambiar {
+    display: flex;
+    flex: none;
+    order: -1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    width: 2.5rem;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: var(--radio);
+    color: var(--lapiz);
+    font-weight: 600;
+}
+
+.asignaturas-cambiar:hover {
+    background: var(--papel);
+    color: var(--tinta);
 }
 
 /* ===== Barra de vistas ===== */
@@ -664,6 +712,22 @@ button {
 .entrada-meta strong {
     color: var(--rojo);
     font-weight: 700;
+}
+
+.entrada-enlace {
+    color: var(--azul);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.entrada-enlace:hover {
+    color: var(--azul-fuerte);
+}
+
+.entrada-enlace .icono {
+    margin-left: 0.25rem;
+    vertical-align: -0.1em;
 }
 
 .entrada-descripcion {
@@ -939,6 +1003,10 @@ button.celda:hover {
     width: min(25rem, calc(100vw - 2rem));
 }
 
+.dialogo--ancho {
+    width: min(40rem, calc(100vw - 2rem));
+}
+
 .dialogo::backdrop {
     background: rgb(15 17 30 / 0.6);
 }
@@ -962,11 +1030,17 @@ button.celda:hover {
     color: var(--lapiz);
 }
 
+/* Los botones se quedan a la vista aunque el contenido del diálogo sea largo y haya que desplazarlo */
 .dialogo-botones {
+    position: sticky;
+    bottom: 0;
     display: flex;
     justify-content: flex-end;
     gap: 0.625rem;
-    margin-top: 0.25rem;
+    margin: 0 -1.5rem -1.5rem;
+    padding: 0.875rem 1.5rem;
+    background: var(--papel);
+    border-top: 1px solid var(--raya);
 }
 
 .campo {
@@ -1053,6 +1127,61 @@ button.celda:hover {
     z-index: 1;
     outline: 2px solid var(--azul);
     outline-offset: 2px;
+}
+
+/* Diálogo «Mis asignaturas»: un bloque de casillas por curso */
+.elegir {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.elegir-cabecera {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+    padding-bottom: 0.375rem;
+    border-bottom: 1px solid var(--raya);
+}
+
+.elegir-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.elegir-ordinal {
+    margin-right: 0.125rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    font-stretch: 62%;
+    line-height: 1;
+}
+
+.elegir-cabecera .btn-texto {
+    font-size: 0.875rem;
+}
+
+.elegir-opcion {
+    display: grid;
+    grid-template-columns: auto 3rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    cursor: pointer;
+}
+
+.elegir-opcion input {
+    align-self: center;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin: 0;
+    accent-color: var(--azul);
+}
+
+.elegir-opcion .sigla {
+    justify-self: start;
+    margin: 0;
 }
 
 .recientes {
@@ -1142,8 +1271,26 @@ button.celda:hover {
 }
 
 /* ===== Pantallas medianas ===== */
+@media (max-width: 39.99rem) {
+    /* Con cuatro opciones en una fila de móvil solo caben los ordinales, y más juntos */
+    .curso {
+        flex: auto;
+        padding-inline: 0.625rem;
+    }
+
+    .curso-nombre {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
 @media (max-width: 59.99rem) {
     /* En la tira de asignaturas solo cabe la sigla; el nombre sigue ahí para los lectores de pantalla */
+    .asignaturas-cambiar span,
     .asignatura-sigla + .asignatura-nombre {
         position: absolute;
         width: 1px;
@@ -1203,7 +1350,8 @@ button.celda:hover {
         grid-column: 3;
     }
 
-    .campos-fila {
+    .campos-fila,
+    .elegir {
         grid-template-columns: 1fr 1fr;
     }
 
@@ -1300,6 +1448,20 @@ button.celda:hover {
         background: none;
         border: 0;
         font-weight: 500;
+    }
+
+    .asignaturas-curso {
+        align-self: auto;
+        padding: 0.875rem 0.625rem 0.3rem;
+    }
+
+    .asignaturas-cambiar {
+        order: 0;
+        justify-content: flex-start;
+        width: auto;
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.625rem;
+        text-align: left;
     }
 
     /* «Todas» no lleva sigla: su nombre ocupa las dos columnas */
