@@ -133,7 +133,7 @@ function htmlHoja(fecha, clase = '') {
         </time>`;
 }
 
-function htmlEntrada(tarea) {
+function htmlEntrada(tarea, hoy) {
     const id = escapar(tarea.id);
     const titulo = escapar(tarea.titulo);
     const examen = tarea.tipo === 'examen';
@@ -148,6 +148,9 @@ function htmlEntrada(tarea) {
         const enlace = `<a class="entrada-enlace" href="${escapar(tarea.enlace)}" target="_blank" rel="noopener noreferrer">${escapar(tarea.plataforma || 'abrir enlace')}${icono('external-link', 14)}<span class="oculto-visual"> (se abre en otra pestaña)</span></a>`;
         lugar = tarea.plataforma ? `, en ${enlace}` : `, ${enlace}`;
     }
+
+    // Lo que aún está por hacer se puede apuntar en el calendario de cada uno.
+    const apuntar = !hecha && !tarea.archivada && tarea.fecha >= hoy;
 
     const clases = ['entrada'];
     if (examen) clases.push('entrada--examen');
@@ -175,6 +178,8 @@ function htmlEntrada(tarea) {
                 ${tarea.archivada ? boton('desarchivar', 'archive-restore', 'Sacar del archivo') : boton('archivar', 'archive', 'Archivar')}
                 ${boton('eliminar', 'trash-2', 'Eliminar', 'btn-icono--peligro')}
             </div>` : ''}
+            ${apuntar ? `
+            ${boton('calendario', 'calendar-plus', 'Añadir al calendario', 'entrada-calendario')}` : ''}
             <button type="button" class="tic" data-accion="marcar" data-id="${id}" data-foco="marcar:${id}" aria-pressed="${hecha}"
                     aria-label="${examen ? 'Hecho' : 'Entregada'}: ${titulo}"
                     title="${hecha ? 'Dejar pendiente' : examen ? 'Marcar como hecho' : 'Marcar como entregada'}">
@@ -199,7 +204,7 @@ function htmlDias(tareas, hoy, { conPlazo = true, conUrgencia = true } = {}) {
                     ${htmlHoja(fecha)}
                     ${conPlazo ? `<span class="dia-plazo">${plazo(fecha, hoy)}</span>` : ''}
                 </div>
-                <ul class="entradas">${delDia.map((tarea) => htmlEntrada(tarea)).join('')}</ul>
+                <ul class="entradas">${delDia.map((tarea) => htmlEntrada(tarea, hoy)).join('')}</ul>
             </li>`;
         }).join('')}
         </ol>`;
@@ -326,7 +331,7 @@ function htmlCalendario() {
         <section class="tramo">
             <h2 class="tramo-titulo">${partes(elegido).diaYMes}</h2>
             ${delDia.length
-                ? `<ul class="entradas entradas--sueltas ${urgencia(elegido, hoy, delDia)}">${delDia.map((tarea) => htmlEntrada(tarea)).join('')}</ul>`
+                ? `<ul class="entradas entradas--sueltas ${urgencia(elegido, hoy, delDia)}">${delDia.map((tarea) => htmlEntrada(tarea, hoy)).join('')}</ul>`
                 : '<p class="nota">Nada para este día.</p>'}
         </section>` : '<p class="nota">Elige un día para ver qué hay.</p>'}
         </div>`;

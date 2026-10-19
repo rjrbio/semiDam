@@ -7,8 +7,9 @@ import {
 } from './estado.js';
 import * as memoria from './memoria.js';
 import { limpiarEnlace } from './enlaces.js';
-import { hoyISO } from './fechas.js';
+import { hoyISO, partes } from './fechas.js';
 import { icono } from './iconos.js';
+import { tituloEvento, enlaceGoogleCalendar, enlaceIcs, nombreIcs } from './recordatorio.js';
 import { htmlCursos, htmlAsignaturas, htmlElegirAsignaturas, htmlVista } from './vistas.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -160,6 +161,19 @@ function exportar() {
     enlace.download = `tareas-dam-${hoyISO()}.json`;
     enlace.click();
     URL.revokeObjectURL(enlace.href);
+}
+
+// ========================================
+// Añadir al calendario
+// ========================================
+
+function abrirCalendario(tarea) {
+    $('#calendario-tarea').textContent = `${tituloEvento(tarea)} · ${partes(tarea.fecha).diaYMes}`;
+    $('#calendario-google').href = enlaceGoogleCalendar(tarea);
+    const ics = $('#calendario-ics');
+    ics.href = enlaceIcs(tarea);
+    ics.download = nombreIcs(tarea);
+    $('#dlg-calendario').showModal();
 }
 
 // ========================================
@@ -444,6 +458,11 @@ const acciones = {
         const id = control.dataset.id;
         if (!estado.abiertas.delete(id)) estado.abiertas.add(id);
         pintar();
+    },
+
+    calendario(control) {
+        const tarea = buscarTarea(control.dataset.id);
+        if (tarea) abrirCalendario(tarea);
     },
 
     nueva() {

@@ -161,6 +161,28 @@
         </form>
     </dialog>
 
+    <dialog id="dlg-calendario" class="dialogo dialogo--corto" aria-labelledby="calendario-titulo">
+        <form method="dialog" class="dialogo-dentro">
+            <div>
+                <h2 id="calendario-titulo" class="dialogo-titulo">Añadir al calendario</h2>
+                <p id="calendario-tarea" class="dialogo-lema"></p>
+            </div>
+            <div class="apuntar">
+                <a id="calendario-google" class="apuntar-opcion" target="_blank" rel="noopener noreferrer" data-accion="cancelar" data-icono="external-link" data-lado="20">
+                    <span class="apuntar-nombre">Google Calendar</span>
+                    <span class="apuntar-ayuda">Se abre en otra pestaña. Te avisa como tengas configurados los eventos de todo el día.</span>
+                </a>
+                <a id="calendario-ics" class="apuntar-opcion" data-accion="cancelar" data-icono="download" data-lado="20">
+                    <span class="apuntar-nombre">Apple, Outlook y otros (.ics)</span>
+                    <span class="apuntar-ayuda">Descarga un archivo con aviso el día antes a las 9:00. Ábrelo para añadirlo a tu calendario.</span>
+                </a>
+            </div>
+            <div class="dialogo-botones">
+                <button type="submit" class="btn btn-secundario">Cerrar</button>
+            </div>
+        </form>
+    </dialog>
+
     <dialog id="dlg-confirmar" class="dialogo dialogo--corto" aria-labelledby="confirmar-titulo" aria-describedby="confirmar-texto">
         <form method="dialog" class="dialogo-dentro">
             <h2 id="confirmar-titulo" class="dialogo-titulo"></h2>

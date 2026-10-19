@@ -15,6 +15,11 @@ Web: https://rjrbio.github.io/semiDam/
 - **Archivadas**: lo que los administradores retiran de la lista, agrupado por meses.
 - **Filtro por asignatura**, con el número de tareas que te quedan en cada una.
 - **Progreso personal.** Cada persona marca lo suyo; no se muestra el progreso de los demás.
+- **Al calendario de cada uno.** Lo que queda por hacer lleva un botón para apuntarlo como evento de todo el día en la fecha de entrega, con la asignatura, la descripción y el enlace:
+  - **Google Calendar**: se abre con el evento ya rellenado. Google pone los avisos que cada uno tenga por defecto para los eventos de todo el día, y se pueden cambiar antes de guardar.
+  - **Apple, Outlook y otros**: se descarga un archivo `.ics`, con un aviso el día antes a las 9:00.
+
+  El evento es una copia: si después cambia la fecha de la tarea, hay que volver a añadirlo.
 - **Tiempo real y sin conexión.** Los cambios llegan a todos sin recargar. Si no hay red se ve lo último guardado y lo que marques se envía al recuperarla.
 - **Tema claro y oscuro.**
 
@@ -31,6 +36,8 @@ js/estado.js        Estado de la aplicación y consultas sobre él
 js/vistas.js        HTML de la lista, el calendario y las archivadas
 js/app.js           Arranque, eventos y acciones
 js/memoria.js       Lo que se recuerda en el navegador (sesión, curso, tema)
+js/enlaces.js       Limpieza de los enlaces de las tareas
+js/recordatorio.js  Añadir una tarea a Google Calendar o en un archivo .ics
 js/fechas.js        Utilidades de fechas
 js/iconos.js        Iconos SVG
 fonts/              Tipografía Archivo
